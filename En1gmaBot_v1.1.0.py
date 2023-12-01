@@ -30,7 +30,7 @@ class Bot:
         # get the oauth token
         # will only need if i start running the bot on a server (see archive)
 
-        oauth_token = 'oauth:k741zqagpr47p7fp86u1l76uvxa7r9'
+        oauth_token = 'oauth:'
 
         # Connect to the IRC server
         self.irc_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -53,7 +53,7 @@ class Bot:
         '''a function that updates the values in my bot google sheet, specifically configured for this sheet
         dependencies: save_sheet()'''
         # open the service account
-        gc = gspread.service_account(filename='/Users/noahvickerson/Desktop/VSCode/twitchBot/botenv/en1gmabot-database.json')
+        gc = gspread.service_account(filename='filepath')
 
         spreadsheet = gc.open('En1gmaBot Database')
         # open and return data to the sheets
@@ -200,7 +200,7 @@ def open_sheet():
     Parameters: none
     Returns: the sheets (command_sheet, saves_counter)'''
     # open the service account
-    gc = gspread.service_account(filename='/Users/noahvickerson/Desktop/VSCode/twitchBot/botenv/en1gmabot-database.json')
+    gc = gspread.service_account(filename='filepath')
 
     spreadsheet = gc.open('En1gmaBot Database')
 
