@@ -222,8 +222,12 @@ class Bot:
 
     def convert_to_sql(self):
         try:
+            with open(os.environ.get('JSON_FILEPATH')) as file:
+                credentials = json.load(file)
+
+                sql_database = credentials["sql_database"]
             # Create a connection to the database
-            conn = sqlite3.connect('/Users/noahvickerson/Desktop/VSCode/twitchBot/databases/en1gmabot_database.sql')
+            conn = sqlite3.connect(sql_database)
             c = conn.cursor()
 
             # Create a table with two columns
