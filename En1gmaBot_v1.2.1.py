@@ -102,7 +102,7 @@ class Bot:
         # open the service account
         gc = gspread.service_account(filename=self.gspread_filename)
 
-        spreadsheet = gc.open('BetaDatabase')
+        spreadsheet = gc.open('En1gmaBot Database')
         # open and return data to the sheets
         command_outputs = spreadsheet.worksheet('Command Outputs') #Commands
         command_descriptions = spreadsheet.worksheet('Command Descriptions') # Command Descriptions
@@ -374,7 +374,7 @@ def open_sheet(filepath):
     # open the service account
     gc = gspread.service_account(filename=filepath)
 
-    spreadsheet = gc.open('BetaDatabase')
+    spreadsheet = gc.open('En1gmaBot Database')
 
     # open and get the data from the sheets
     command_outputs = spreadsheet.worksheet('Command Outputs') #Commands
