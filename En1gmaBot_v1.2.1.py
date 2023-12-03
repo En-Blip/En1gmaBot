@@ -169,7 +169,7 @@ class Bot:
             self.irc_socket.close()
 
             # update the sheets
-            #self.update_sheet_values()
+            self.update_sheet_values()
             sys.exit(0)
 
     def reply_to_message(self, response):
