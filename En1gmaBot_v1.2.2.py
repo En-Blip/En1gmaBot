@@ -222,7 +222,7 @@ class Bot:
 
             # send the command description
             if ' '.join(message.split()[:-1]) in simplified_command_desc_dict.keys():
-                send_message(self.irc_socket, channel_name, f'{simplified_command_desc_dict[' '.join(message.split()[:-1])]}')
+                send_message(self.irc_socket, channel_name, f'{simplified_command_desc_dict[" ".join(message.split()[:-1])]}')
             else:
                 send_message(self.irc_socket, channel_name, 'unknown command, type $commands for a list of commands')
 
