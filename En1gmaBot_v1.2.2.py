@@ -166,8 +166,6 @@ class Bot:
                     cleaned_response = clean_response(response)
                     if cleaned_response['mod_status']:
                         print(cleaned_response['channel_name'], '(mod)' + cleaned_response['username'] + ':', cleaned_response['message'])
-                    elif cleaned_response['vip_status']:
-                        print(cleaned_response['channel_name'], '(vip)' + cleaned_response['username'] + ':', cleaned_response['message'])
                     else:
                         print(cleaned_response['channel_name'], cleaned_response['username'] + ':', cleaned_response['message'])
 
@@ -405,13 +403,11 @@ def clean_response(response):
 
     # user statuses
     mod_status = tags['user-type']
-    vip_status = tags['vip']
-    subscriber_status = tags['subscriber']
 
     # pull the message
     message = response.split(f'PRIVMSG #{channel_name} :')[-1]
 
-    return {'message': message, 'username': username, 'channel_name': channel_name, 'mod_status': mod_status, 'vip_status': vip_status, 'subscriber_status': subscriber_status}          
+    return {'message': message, 'username': username, 'channel_name': channel_name, 'mod_status': mod_status}          
 
 def parse_message_tags(tags):
     '''parse the message tags
