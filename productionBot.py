@@ -15,7 +15,8 @@ CHANGELOG
     auto qed for pencenters channel
 
 TODO
-    possible bug when checking saves for a user with no saves
+    possible bug when checking saves
+    add better control of gspread updates
 '''
 
 SCHEDULE = {
@@ -111,23 +112,7 @@ class Bot:
 
         spreadsheet = gc.open('En1gmaBot Database')
         # open and return data to the sheets
-        command_outputs = spreadsheet.worksheet('Command Outputs') #Commands
-        command_descriptions = spreadsheet.worksheet('Command Descriptions') # Command Descriptions
         saves_table = spreadsheet.worksheet('SavesCounter') #SavesCounter
-
-        
-        command_outputs.clear()
-        command_descriptions.clear()
-
-        # update the sheets
-        for i in range(len(self.command_descriptions.keys()), 0, -1):
-            time.sleep(1)
-            command_descriptions.insert_row([list(self.command_descriptions.keys())[i-1], list(self.command_descriptions.values())[i-1]], 1)
-
-        for i in range(len(self.default_responses.keys()), 0, -1):
-            time.sleep(1)
-            command_outputs.insert_row([list(self.default_responses.keys())[i-1], list(self.default_responses.values())[i-1]], 1)
-        
 
         for i in range(len(self.saves_counter.keys()), 0, -1):
             time.sleep(1)
@@ -163,6 +148,7 @@ class Bot:
                 self.irc_socket.close()
 
                 # update the sheets
+                print('updating spreadsheets')
                 self.update_sheet_values()
                 sys.exit(0)
 
@@ -273,9 +259,23 @@ class Bot:
                 # send an error message
                 send_message(self.irc_socket, channel_name, 'incorrect command usage, you do not have to surround your command name in quotes')
             else:
-                # add the command
+                # add the command to the dictionary
                 self.command_descriptions["$" + message.split()[2]] = " ".join(message.split()[3:])
                 self.default_responses["$" + message.split()[2]] = " ".join(message.split()[3:])
+
+                # open the service account
+                gc = gspread.service_account(filename=self.gspread_filename)
+
+                # add the command to the database
+                spreadsheet = gc.open('En1gmaBot Database')
+
+                # open and return data to the sheets
+                command_outputs = spreadsheet.worksheet('Command Outputs') #Commands
+                command_descriptions = spreadsheet.worksheet('Command Descriptions') # Command Descriptions
+
+                # make sure not to overflow the ai 
+                command_descriptions.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 1)
+                command_outputs.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 1)
 
                 send_message(self.irc_socket, channel_name, f'command added \'{message.split()[2]}\'')
 
@@ -408,8 +408,6 @@ def clean_response(response):
 
     # channnel name (whos chat we're in)
     channel_name = response.split('PRIVMSG #')[-1].split(' :')[0]
-
-    print(tags)
 
     # username
     username = tags['display-name']
