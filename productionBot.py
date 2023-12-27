@@ -16,7 +16,8 @@ CHANGELOG
 
 TODO
     possible bug when checking saves
-    add better control of gspread updates
+    add better control of gspread save updates
+    turn the auto-qed into a function
 '''
 
 SCHEDULE = {
@@ -156,8 +157,8 @@ class Bot:
                 with open('error_log.txt', 'a') as f:
                     f.write(traceback.format_exc())
                     f.write('\n')
+                    traceback.print_exc()
                 
-
     def run_loop(self):
         response = self.irc_socket.recv(2048).decode('UTF-8')
         if response.startswith('PING'):
@@ -194,7 +195,9 @@ class Bot:
 
             try:
                 if int(cleaned_response['message'].strip()) == pq_ans:
+                    # if someone correctly answers the pop quiz, give them a qed
                     send_message(self.irc_socket, cleaned_response['channel_name'], f'!qed @{cleaned_response["username"]}')
+                    self.increment_savecounter(cleaned_response["username"], cleaned_response['channel_name'])
                     pq_ans = 'πa'
             except:
                 pass
@@ -203,7 +206,6 @@ class Bot:
             if cleaned_response['message'].startswith('$') or cleaned_response['message'].startswith('!'):
                 self.reply_to_message(cleaned_response)
         
-
     def reply_to_message(self, response):
         # get the message and response
         message = response['message'].lower().strip()
@@ -239,6 +241,7 @@ class Bot:
             # increment the savecounter for that user
             try:
                 user_saves = self.increment_savecounter(message.split()[1], channel_name)
+
             except Exception as e:
                 send_message(self.irc_socket, channel_name, e)
                 return
@@ -247,7 +250,7 @@ class Bot:
             if not message.startswith('!qed '):
                 send_message(self.irc_socket, channel_name, f'{message.split()[1]} has saved the day {user_saves[self.CHANNEL_COLUMNS.index(channel_name)]} times in {channel_name}.')
             else:
-                print(f'{message.split()[1]} has saved the day {user_saves[self.CHANNEL_COLUMNS.index(channel_name)]} times in {channel_name}.')   
+                print(f'{message.split()[1]} has qed\'d {user_saves[self.CHANNEL_COLUMNS.index(channel_name)]} times in {channel_name}.')   
 
         elif message.startswith('$command add'):
             # make sure it's a correct input
@@ -273,9 +276,9 @@ class Bot:
                 command_outputs = spreadsheet.worksheet('Command Outputs') #Commands
                 command_descriptions = spreadsheet.worksheet('Command Descriptions') # Command Descriptions
 
-                # make sure not to overflow the ai 
-                command_descriptions.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 1)
-                command_outputs.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 1)
+                # insert the rows
+                command_descriptions.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 2)
+                command_outputs.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 2)
 
                 send_message(self.irc_socket, channel_name, f'command added \'{message.split()[2]}\'')
 
@@ -468,7 +471,7 @@ def open_sheet(filepath):
 
 
 bot_username = 'en1gmabot'
-channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky']
+channel_names = ['en1gmaunknown']#['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky']
 
 my_bot = Bot(bot_username, channel_names)
 my_bot.join_chat()
