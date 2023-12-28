@@ -8,6 +8,8 @@ import sqlite3
 import os
 import numpy as np
 import traceback
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 '''
 CHANGELOG
@@ -102,9 +104,9 @@ class Bot:
     def get_sheet_values(self):
         '''a function that opens and stores data from my bot google sheet, specifically configured for this sheet
         dependencies: open_sheet()'''
-        self.command_descriptions, self.default_responses, self.saves_counter = open_sheet(self.gspread_filename)
+        self.command_descriptions, self.default_responses, self.saves_counter, self.user_positions = open_sheet(self.gspread_filename)
         
-    def update_sheet_values(self):
+    def update_sheet_values(self, username):
         '''a function that updates the values in my bot google sheet, specifically configured for this sheet
         dependencies: save_sheet()'''
 
@@ -115,19 +117,22 @@ class Bot:
         # open and return data to the sheets
         saves_table = spreadsheet.worksheet('SavesCounter') #SavesCounter
 
-        for i in range(len(self.saves_counter.keys()), 0, -1):
-            time.sleep(1)
+        # get the index of the user's save in the table
+        user_save_index = self.user_positions.index(username)
 
-            # get the save values to update the table range, adding the total on the end
-            saves_values = [list(self.saves_counter.keys())[i-1]] + list(self.saves_counter.values())[i-1].tolist()
+        # get the dictionary's save values for that user
+        user_count = self.saves_counter[username].tolist()
 
-            # update the table with the range of values
-            for j, val in enumerate(saves_values):
-                # get the letter of the cell
-                letter = chr(ord('A') + j)
+        # update the username (for first time saves)
+        saves_table.update(range_name=f'A{3+user_save_index}', values=[[username]])
 
-                # update the cell
-                saves_table.update(f'{letter}{2+i}', val)
+        # update the table with the range of values
+        for j, val in enumerate(user_count):
+            # get the letter of the cell
+            letter = chr(ord('A') + j + 1)
+
+            # update the cell
+            saves_table.update(range_name=f'{letter}{3+user_save_index}', values=[[val]])
 
         print('sheets successfully updated')
     
@@ -150,7 +155,7 @@ class Bot:
 
                 # update the sheets
                 print('updating spreadsheets')
-                self.update_sheet_values()
+                #self.update_sheet_values()
                 sys.exit(0)
 
             except Exception as e:
@@ -175,13 +180,13 @@ class Bot:
                 print(cleaned_response['channel_name'], cleaned_response['username'] + ':', cleaned_response['message'])
 
             # sync chat messages between channels
-            if len(self.synced_channels) > 1 and cleaned_response['username'] != self.bot_username and cleaned_response['channel_name'] in self.synced_channels:
+            if len(self.synced_channels) > 1 and cleaned_response['username'] != self.bot_username and cleaned_response['message'].startswith('$send') and cleaned_response['channel_name'] in self.synced_channels:
                 # loop through all the channels currently synced
                 for channel in self.synced_channels:
-                    # if its not the bot, or the channel the message is in, spread the message
+                    # if its not the channel the message is in, spread the message
                     if channel != cleaned_response['channel_name']:
                         # create and send the message
-                        msg = f'From {cleaned_response["channel_name"]}, {cleaned_response["username"]}: {cleaned_response["message"]}'
+                        msg = f'From {cleaned_response["channel_name"]}, {cleaned_response["username"]}: {cleaned_response["message"][6:]}'
 
                         send_message(self.irc_socket, channel, msg)
 
@@ -244,13 +249,13 @@ class Bot:
 
             except Exception as e:
                 send_message(self.irc_socket, channel_name, e)
-                return
+                return 
             
             # send an update message if pencenter hasn't already
             if not message.startswith('!qed '):
                 send_message(self.irc_socket, channel_name, f'{message.split()[1]} has saved the day {user_saves[self.CHANNEL_COLUMNS.index(channel_name)]} times in {channel_name}.')
             else:
-                print(f'{message.split()[1]} has qed\'d {user_saves[self.CHANNEL_COLUMNS.index(channel_name)]} times in {channel_name}.')   
+                print(f'{message.split()[1]} has qed\'d {user_saves[self.CHANNEL_COLUMNS.index(channel_name)]} times in {channel_name}.')  
 
         elif message.startswith('$command add'):
             # make sure it's a correct input
@@ -284,7 +289,7 @@ class Bot:
 
         elif message == '$syncme':
             # make sure theyre a mod
-            if not (mod_status or channel_name.lower() == username.lower()):
+            if not (mod_status or channel_name.lower() == username.lower() or username.lower() == 'en1gmaunknown'):
                 send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
                 return
 
@@ -295,7 +300,7 @@ class Bot:
 
         elif message == '$unsyncme':
             # make sure theyre a mod
-            if not (mod_status or channel_name.lower() == username.lower()):
+            if not (mod_status or channel_name.lower() == username.lower() or username.lower() == 'en1gmaunknown'):
                 send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
                 return
 
@@ -367,7 +372,7 @@ class Bot:
 
             send_message(self.irc_socket, channel_name, saves_str[:-1] + '.')
 
-        elif message.startswith('$'):
+        elif message.startswith('$') and not message.startswith('$send'):
             # catch all other messages
             send_message(self.irc_socket, channel_name, 'unknown command, type $commands for a list of commands')
 
@@ -380,23 +385,32 @@ class Bot:
         if username.startswith('@'):
             username = username[1:]
 
+        # strip and lower usernames
+        username = username.strip().lower()
+
         # make sure the channel name is in the list
         if channel_name not in self.CHANNEL_COLUMNS:
             raise Exception(f'{channel_name} not in self.CHANNEL_COLUMNS')
 
         # make sure the username is in the dict, and add it if its not
         if username.lower() in self.saves_counter:
+            # increment the total and next save
             self.saves_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] += 1
             self.saves_counter[username][-1] += 1
-            return self.saves_counter[username]
+
         else:
-            # create the user in the dict
-            self.saves_counter[username] = [0] * len(self.CHANNEL_COLUMNS)
+            # create the user in the dict and our positions list
+            self.saves_counter[username] = np.zeros(len(self.CHANNEL_COLUMNS) + 1, dtype=int)
+            self.user_positions.append(username)
 
             # initialize the total and first save
             self.saves_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] = 1
             self.saves_counter[username][-1] = 1
-            return self.saves_counter[username]
+
+        # update the spreadsheet for the savecounter
+        self.update_sheet_values(username)
+
+        return self.saves_counter[username]
             
 
 def send_message(irc_socket, channel_name, message):
@@ -462,16 +476,17 @@ def open_sheet(filepath):
     command_desc_dict = dict(zip(command_descriptions.col_values(1), command_descriptions.col_values(2)))
     saves_ints = np.array([[int(i) for i in saves_counter.col_values(j)[2:]] for j in range(2, 8)])
     saves_dict = dict(zip(saves_counter.col_values(1)[2:], saves_ints.transpose()))
+    user_positions = saves_counter.col_values(1)[2:]
 
 
 
-    return (command_desc_dict, default_responses, saves_dict)
+    return (command_desc_dict, default_responses, saves_dict, user_positions)
 
 
 
 
 bot_username = 'en1gmabot'
-channel_names = ['en1gmaunknown']#['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky']
+channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky']
 
 my_bot = Bot(bot_username, channel_names)
 my_bot.join_chat()
