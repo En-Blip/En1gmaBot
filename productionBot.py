@@ -196,16 +196,13 @@ class Bot:
                 split_message = cleaned_response['message'].split(' ')
 
                 # perform the operation
-                pq_ans = int(split_message[2]) + int(split_message[4]) * int(split_message[6])
+                pq_ans = str(int(split_message[2]) + int(split_message[4]) * int(split_message[6]))
 
-            try:
-                if int(cleaned_response['message'].strip()) == pq_ans:
-                    # if someone correctly answers the pop quiz, give them a qed
-                    send_message(self.irc_socket, cleaned_response['channel_name'], f'!qed @{cleaned_response["username"]}')
-                    self.increment_savecounter(cleaned_response["username"], cleaned_response['channel_name'])
-                    pq_ans = 'πa'
-            except:
-                pass
+            if cleaned_response['message'].strip() == pq_ans:
+                # if someone correctly answers the pop quiz, give them a qed
+                send_message(self.irc_socket, cleaned_response['channel_name'], f'!qed @{cleaned_response["username"]}')
+                self.increment_savecounter(cleaned_response["username"], cleaned_response['channel_name'])
+                pq_ans = 'πa'
 
             # reply to chat messages
             if cleaned_response['message'].startswith('$') or cleaned_response['message'].startswith('!'):
