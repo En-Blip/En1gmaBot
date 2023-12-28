@@ -142,7 +142,7 @@ class Bot:
             #send_message(self.irc_socket, channel_name, 'fingie wingies everyone, En1gmaBot has arrived')
 
         # store pencenters pop quiz answer
-        pq_ans = 'πa'
+        self.pq_ans = 'πa'
 
         while True:
             try:
@@ -196,9 +196,9 @@ class Bot:
                 split_message = cleaned_response['message'].split(' ')
 
                 # perform the operation
-                pq_ans = str(int(split_message[2]) + int(split_message[4]) * int(split_message[6]))
+                self.pq_ans = str(int(split_message[2]) + int(split_message[4]) * int(split_message[6]))
 
-            if cleaned_response['message'].strip() == pq_ans:
+            if cleaned_response['message'].strip() == self.pq_ans:
                 # if someone correctly answers the pop quiz, give them a qed
                 send_message(self.irc_socket, cleaned_response['channel_name'], f'!qed @{cleaned_response["username"]}')
                 self.increment_savecounter(cleaned_response["username"], cleaned_response['channel_name'])
