@@ -202,7 +202,7 @@ class Bot:
                 # if someone correctly answers the pop quiz, give them a qed
                 send_message(self.irc_socket, cleaned_response['channel_name'], f'!qed @{cleaned_response["username"]}')
                 self.increment_savecounter(cleaned_response["username"], cleaned_response['channel_name'])
-                pq_ans = 'πa'
+                self.pq_ans = 'πa'
 
             # reply to chat messages
             if cleaned_response['message'].startswith('$') or cleaned_response['message'].startswith('!'):
