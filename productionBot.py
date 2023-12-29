@@ -293,7 +293,7 @@ class Bot:
             # if its a moderator or admin, add them to the sync list
             self.synced_channels.append(channel_name)
 
-            send_message(self.irc_socket, channel_name, 'you are now synced to this channel')
+            send_message(self.irc_socket, channel_name, 'you are now synced to this channel. use $send <message> to broadcast messages')
 
         elif message == '$unsyncme':
             # make sure theyre a mod
