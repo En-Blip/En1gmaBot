@@ -4,7 +4,7 @@ import datetime
 import time
 import sys
 import json
-import sqlite3
+import requests
 import os
 import numpy as np
 import traceback
@@ -15,11 +15,12 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 CHANGELOG
     saves now keeps track of the channels
     auto qed for pencenters channel
+    add better control of gspread save updates
+    turn the auto-qed into a function
+    added $live command
 
 TODO
     possible bug when checking saves
-    add better control of gspread save updates
-    turn the auto-qed into a function
 '''
 
 SCHEDULE = {
@@ -74,6 +75,7 @@ class Bot:
 
         self.gspread_filename = credentials["GSPREAD_FILENAME"]
         self.oauth_token = f'oauth:{credentials["TWITCH_OAUTH_TOKEN"]}'
+        self.client_id = credentials["TWITCH_CLIENT_ID"]
         
         self.authorize_bot(bot_username)
 
@@ -223,13 +225,14 @@ class Bot:
             if ' '.join(message.split()[:-1]) in simplified_command_desc_dict.keys():
                 send_message(self.irc_socket, channel_name, f'{simplified_command_desc_dict[" ".join(message.split()[:-1])]}')
             else:
+                # fix this for command add help
                 send_message(self.irc_socket, channel_name, 'unknown command, type $commands for a list of commands')
 
         elif message in self.default_responses:
             # send the default response based on the message
             send_message(self.irc_socket, channel_name, self.default_responses[message])
 
-        elif message.startswith('$saves') or message.startswith('!qed '):
+        elif message.startswith('$saves') or (message.startswith('!qed ') and channel_name.lower() == 'pencenter'):
             # make sure theyre a mod
             if not (mod_status or channel_name.lower() == username.lower()):
                 send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
@@ -368,6 +371,27 @@ class Bot:
                 saves_str += f' {channel_saves} times in {self.CHANNEL_COLUMNS[i]},'
 
             send_message(self.irc_socket, channel_name, saves_str[:-1] + '.')
+
+        elif message.startswith('$live'):
+
+            # use the twitch api to get the live channels that the bot follows
+            post_url = 'https://api.twitch.tv/helix/streams/followed?user_id=996414574'
+            authorization = f'Bearer {self.oauth_token[6:]}'
+            client_id = self.client_id
+
+            # send the post request
+            response = requests.get(post_url, headers={'Authorization': authorization, 'Client-Id': client_id})
+
+            print(f'request sent: {response}')
+
+            # parse the response for a list of live channels
+            data = [i['user_name'] for i in response.json()['data']]
+
+            # create a string with a list of currently live channels
+            live_channels = 'Currently Live Channels: ' + ', '.join(data)
+            send_message(self.irc_socket, channel_name, live_channels)
+
+                
 
         elif message.startswith('$') and not message.startswith('$send'):
             # catch all other messages
