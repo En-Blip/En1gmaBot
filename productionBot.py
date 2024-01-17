@@ -124,7 +124,7 @@ class Bot:
         user_count = self.saves_counter[username].tolist()
 
         # update the username (for first time saves)
-        saves_table.update(range_name=f'A{4+user_save_index}', values=[[username]])
+        saves_table.update(range_name=f'A{5+user_save_index}', values=[[username]])
 
         # update the table with the range of values
         for j, val in enumerate(user_count):
@@ -132,7 +132,7 @@ class Bot:
             letter = chr(ord('A') + j + 1)
 
             # update the cell
-            saves_table.update(range_name=f'{letter}{4+user_save_index}', values=[[val]])
+            saves_table.update(range_name=f'{letter}{5+user_save_index}', values=[[val]])
 
         print('sheets successfully updated')
     
@@ -392,14 +392,16 @@ class Bot:
 
             print(f'request sent: {response}')
 
+            if response.json()['data'] == []:
+                send_message(self.irc_socket, channel_name, 'no live channels')
+                return
+
             # parse the response for a list of live channels
             data = [i['user_name'] for i in response.json()['data']]
 
             # create a string with a list of currently live channels
             live_channels = 'Currently Live Channels: ' + ', '.join(data)
             send_message(self.irc_socket, channel_name, live_channels)
-
-                
 
         elif message.startswith('$') and not message.startswith('$send'):
             # catch all other messages
