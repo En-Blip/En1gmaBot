@@ -13,11 +13,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 '''
 CHANGELOG
-    saves now keeps track of the channels
-    auto qed for pencenters channel
-    add better control of gspread save updates
-    turn the auto-qed into a function
-    added $live command
+    added obi to the channels/saves
+    changed save fetching to better format sheet
+    added automatic authentication
 
 TODO
     possible bug when checking saves
@@ -83,7 +81,7 @@ class Bot:
         self.get_sheet_values()
 
         # spreadsheet variables
-        self.CHANNEL_COLUMNS = ['dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky']
+        self.CHANNEL_COLUMNS = ['dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko']
 
     def authorize_bot(self, bot_username):
         # Set up the connection to the IRC server
@@ -126,7 +124,7 @@ class Bot:
         user_count = self.saves_counter[username].tolist()
 
         # update the username (for first time saves)
-        saves_table.update(range_name=f'A{3+user_save_index}', values=[[username]])
+        saves_table.update(range_name=f'A{4+user_save_index}', values=[[username]])
 
         # update the table with the range of values
         for j, val in enumerate(user_count):
@@ -134,33 +132,44 @@ class Bot:
             letter = chr(ord('A') + j + 1)
 
             # update the cell
-            saves_table.update(range_name=f'{letter}{3+user_save_index}', values=[[val]])
+            saves_table.update(range_name=f'{letter}{4+user_save_index}', values=[[val]])
 
         print('sheets successfully updated')
     
     def run(self):
 
-        #for channel_name in self.channel_names:
-            #send_message(self.irc_socket, channel_name, 'fingie wingies everyone, En1gmaBot has arrived')
-
         # store pencenters pop quiz answer
         self.pq_ans = 'πa'
+
+        oauth_reset = False
 
         while True:
             try:
                 # Continuously listen for messages in the chat
                 self.run_loop()
+
+                # if the oauth reset is successful then reset our test variable
+                if oauth_reset:
+                    oauth_reset = False
                     
             except KeyboardInterrupt:
                 # end the code and update everything
                 self.irc_socket.close()
 
                 # update the sheets
-                print('updating spreadsheets')
-                #self.update_sheet_values()
+                print('ending session')
                 sys.exit(0)
 
             except Exception as e:
+                # first try refreshing the oauth token
+                if not oauth_reset:
+                    self.refresh_oauth()
+
+                    # save a variable to show we already tried resetting the oauth
+                    oauth_reset = True
+                    continue
+
+                # log the error is its not about authentication
                 with open('error_log.txt', 'a') as f:
                     f.write(traceback.format_exc())
                     f.write('\n')
@@ -171,7 +180,6 @@ class Bot:
         if response.startswith('PING'):
             self.irc_socket.send(bytes('PONG\r\n', 'UTF-8'))
         else:
-            # clean the twitch chat message and log it
             if response.startswith(':'):
                 return
 
@@ -432,7 +440,9 @@ class Bot:
         self.update_sheet_values(username)
 
         return self.saves_counter[username]
-            
+
+    def refresh_oauth(self):
+        pass  
 
 def send_message(irc_socket, channel_name, message):
     irc_socket.send(bytes(f"PRIVMSG #{channel_name} :{message}\r\n", 'UTF-8'))
@@ -495,9 +505,9 @@ def open_sheet(filepath):
     # convert the sheets to dictionaries
     default_responses = dict(zip(command_outputs.col_values(1), command_outputs.col_values(2)))
     command_desc_dict = dict(zip(command_descriptions.col_values(1), command_descriptions.col_values(2)))
-    saves_ints = np.array([[int(i) for i in saves_counter.col_values(j)[2:]] for j in range(2, 8)])
-    saves_dict = dict(zip(saves_counter.col_values(1)[2:], saves_ints.transpose()))
-    user_positions = saves_counter.col_values(1)[2:]
+    saves_ints = np.array([[int(i) for i in saves_counter.col_values(j)[4:]] for j in range(2, 9)])
+    saves_dict = dict(zip(saves_counter.col_values(1)[4:], saves_ints.transpose()))
+    user_positions = saves_counter.col_values(1)[4:]
 
 
 
@@ -507,7 +517,7 @@ def open_sheet(filepath):
 
 
 bot_username = 'en1gmabot'
-channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky']
+channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko']
 
 my_bot = Bot(bot_username, channel_names)
 my_bot.join_chat()
