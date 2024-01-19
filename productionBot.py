@@ -15,9 +15,10 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 CHANGELOG
     added obi to the channels/saves
     changed save fetching to better format sheet
-    added automatic authentication
 
 TODO
+    add autho oauth
+    fix live command for oauth
     possible bug when checking saves
 '''
 
@@ -74,6 +75,8 @@ class Bot:
         self.gspread_filename = credentials["GSPREAD_FILENAME"]
         self.oauth_token = f'oauth:{credentials["TWITCH_OAUTH_TOKEN"]}'
         self.client_id = credentials["TWITCH_CLIENT_ID"]
+        self.refresh_token = credentials["TWITCH_REFRESH_TOKEN"]
+        self.client_secret = credentials["TWITCH_CLIENT_SECRET"]
         
         self.authorize_bot(bot_username)
 
@@ -167,7 +170,6 @@ class Bot:
 
                     # save a variable to show we already tried resetting the oauth
                     oauth_reset = True
-                    continue
 
                 # log the error is its not about authentication
                 with open('error_log.txt', 'a') as f:
@@ -213,6 +215,13 @@ class Bot:
                 send_message(self.irc_socket, cleaned_response['channel_name'], f'!qed @{cleaned_response["username"]}')
                 self.increment_savecounter(cleaned_response["username"], cleaned_response['channel_name'])
                 self.pq_ans = 'πa'
+
+            if cleaned_response['username'] == 'pencenter' and ' '.join(cleaned_response['message'].split(' ')[6:]).strip().lower() == 'QED points. pencenQed pencenQed pencenQed'.strip().lower():
+                # increment the save counter
+                self.increment_savecounter(cleaned_response["username"], cleaned_response['channel_name'], -1*int(cleaned_response['message'].split(' ')[5]))
+                print(f'decreasing by {int(cleaned_response['message'].split(' ')[5])}')
+            else:
+                print(' '.join(cleaned_response['message'].split(' ')[6:]))
 
             # reply to chat messages
             if cleaned_response['message'].startswith('$') or cleaned_response['message'].startswith('!'):
@@ -382,32 +391,54 @@ class Bot:
 
         elif message.startswith('$live'):
 
-            # use the twitch api to get the live channels that the bot follows
-            post_url = 'https://api.twitch.tv/helix/streams/followed?user_id=996414574'
-            authorization = f'Bearer {self.oauth_token[6:]}'
-            client_id = self.client_id
+            failed_last_attempt = False
 
-            # send the post request
-            response = requests.get(post_url, headers={'Authorization': authorization, 'Client-Id': client_id})
+            while True:
 
-            print(f'request sent: {response}')
+                # use the twitch api to get the live channels that the bot follows
+                post_url = 'https://api.twitch.tv/helix/streams/followed?user_id=996414574'
+                authorization = f'Bearer {self.oauth_token[6:]}'
+                client_id = self.client_id
 
-            if response.json()['data'] == []:
-                send_message(self.irc_socket, channel_name, 'no live channels')
+                # send the post request
+                response = requests.get(post_url, headers={'Authorization': authorization, 'Client-Id': client_id})
+
+                print(f'request sent: {response}')
+
+                if response.status_code != 200:
+                    if not failed_last_attempt:
+                        # send error message
+                        send_message(self.irc_socket, channel_name, 'failed to get live channels, retrying')
+                        failed_last_attempt = True
+
+                        # refresh the oauth token and try again
+                        self.refresh_oauth()
+
+                        continue
+
+                    if failed_last_attempt:
+                        # send error message
+                        send_message(self.irc_socket, channel_name, 'failed to get live channels, please alert En1gma that he sucks')
+                        return
+
+                if response.json()['data'] == []:
+                    send_message(self.irc_socket, channel_name, 'no live channels')
+                    return
+
+                # parse the response for a list of live channels
+                data = [i['user_name'] for i in response.json()['data']]
+
+                # create a string with a list of currently live channels
+                live_channels = 'Currently Live Channels: ' + ', '.join(data)
+                send_message(self.irc_socket, channel_name, live_channels)
+
                 return
-
-            # parse the response for a list of live channels
-            data = [i['user_name'] for i in response.json()['data']]
-
-            # create a string with a list of currently live channels
-            live_channels = 'Currently Live Channels: ' + ', '.join(data)
-            send_message(self.irc_socket, channel_name, live_channels)
 
         elif message.startswith('$') and not message.startswith('$send'):
             # catch all other messages
             send_message(self.irc_socket, channel_name, 'unknown command, type $commands for a list of commands')
 
-    def increment_savecounter(self, username, channel_name):
+    def increment_savecounter(self, username, channel_name, increment=1):
         '''increment the savecounter for that user
         Parameters: username (str), channel_name (str)
         Returns: users number of saves'''
@@ -426,8 +457,8 @@ class Bot:
         # make sure the username is in the dict, and add it if its not
         if username.lower() in self.saves_counter:
             # increment the total and next save
-            self.saves_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] += 1
-            self.saves_counter[username][-1] += 1
+            self.saves_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] += increment
+            self.saves_counter[username][-1] += increment
 
         else:
             # create the user in the dict and our positions list
@@ -444,7 +475,28 @@ class Bot:
         return self.saves_counter[username]
 
     def refresh_oauth(self):
-        pass  
+        # get the parameters for our post request'
+        url = "https://id.twitch.tv/oauth2/token"
+
+        params = {
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "refresh_token": self.refresh_token,
+            "grant_type": "refresh_token",
+        }
+
+        # send the post request
+        r = requests.post(url, headers='Content-Type: application/x-www-form-urlencoded', data=f'grant_type=refresh_token&refresh_token={self.refresh_token}&client_id={self.client_id}&client_secret={self.client_secret}')
+
+
+        # update the oauth token
+        try:
+            self.oauth_token = r.json()['access_token']
+            self.refresh_token = r.json()['refresh_token']
+            print(f'new oauth token: {self.oauth_token}')
+        except:
+            print('refresh failed')
+
 
 def send_message(irc_socket, channel_name, message):
     irc_socket.send(bytes(f"PRIVMSG #{channel_name} :{message}\r\n", 'UTF-8'))
