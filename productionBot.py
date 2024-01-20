@@ -219,9 +219,7 @@ class Bot:
             if cleaned_response['username'] == 'pencenter' and ' '.join(cleaned_response['message'].split(' ')[6:]).strip().lower() == 'QED points. pencenQed pencenQed pencenQed'.strip().lower():
                 # increment the save counter
                 self.increment_savecounter(cleaned_response["username"], cleaned_response['channel_name'], -1*int(cleaned_response['message'].split(' ')[5]))
-                print(f'decreasing by {int(cleaned_response['message'].split(' ')[5])}')
-            else:
-                print(' '.join(cleaned_response['message'].split(' ')[6:]))
+                print(f"decreasing by {int(cleaned_response['message'].split(' ')[5])}")
 
             # reply to chat messages
             if cleaned_response['message'].startswith('$') or cleaned_response['message'].startswith('!'):
@@ -413,7 +411,6 @@ class Bot:
 
                         # refresh the oauth token and try again
                         self.refresh_oauth()
-
                         continue
 
                     if failed_last_attempt:
@@ -486,8 +483,7 @@ class Bot:
         }
 
         # send the post request
-        r = requests.post(url, headers='Content-Type: application/x-www-form-urlencoded', data=f'grant_type=refresh_token&refresh_token={self.refresh_token}&client_id={self.client_id}&client_secret={self.client_secret}')
-
+        r = requests.post(url, headers='Content-Type: application/x-www-form-urlencoded', params=params)
 
         # update the oauth token
         try:
@@ -540,7 +536,6 @@ def parse_message_tags(tags):
 
 
     return message_tags
-
 
 def open_sheet(filepath):
     '''a function that opens and stores data from my bot google sheet, specifically configured for this sheet
