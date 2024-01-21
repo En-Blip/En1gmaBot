@@ -50,7 +50,7 @@ SCHEDULE = {
     },
     'saturday': {
         'DonDoesMath': '1:00PM',
-        'eToThe2iPi': '8:00AM',
+        'eToThe2iPi': '9:00AM',
     },
     'sunday': {
         'pencenter': '2:00PM',
@@ -483,7 +483,7 @@ class Bot:
         }
 
         # send the post request
-        r = requests.post(url, headers='Content-Type: application/x-www-form-urlencoded', params=params)
+        r = requests.post(url, params=params)
 
         # update the oauth token
         try:
