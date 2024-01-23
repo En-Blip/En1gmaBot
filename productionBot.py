@@ -218,8 +218,7 @@ class Bot:
 
             if cleaned_response['username'] == 'pencenter' and ' '.join(cleaned_response['message'].split(' ')[6:]).strip().lower() == 'QED points. pencenQed pencenQed pencenQed'.strip().lower():
                 # increment the save counter
-                self.increment_savecounter(cleaned_response["username"], cleaned_response['channel_name'], -1*int(cleaned_response['message'].split(' ')[5]))
-                print(f"decreasing by {int(cleaned_response['message'].split(' ')[5])}")
+                user_saves = self.increment_savecounter(cleaned_response['message'].split(' ')[2], cleaned_response['channel_name'], -1*int(cleaned_response['message'].split(' ')[5]))
 
             # reply to chat messages
             if cleaned_response['message'].startswith('$') or cleaned_response['message'].startswith('!'):
@@ -446,13 +445,14 @@ class Bot:
 
         # strip and lower usernames
         username = username.strip().lower()
+        channel_name = channel_name.strip().lower()
 
         # make sure the channel name is in the list
         if channel_name not in self.CHANNEL_COLUMNS:
             raise Exception(f'{channel_name} not in self.CHANNEL_COLUMNS')
 
         # make sure the username is in the dict, and add it if its not
-        if username.lower() in self.saves_counter:
+        if username in self.saves_counter:
             # increment the total and next save
             self.saves_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] += increment
             self.saves_counter[username][-1] += increment
@@ -566,7 +566,7 @@ def open_sheet(filepath):
 
 
 bot_username = 'en1gmabot'
-channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko']
+channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation']
 
 my_bot = Bot(bot_username, channel_names)
 my_bot.join_chat()
