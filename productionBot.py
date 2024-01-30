@@ -19,7 +19,7 @@ CHANGELOG
 TODO
     add autho oauth
     fix live command for oauth
-    possible bug when checking saves
+    close api responses
 '''
 
 SCHEDULE = {
@@ -170,12 +170,6 @@ class Bot:
 
                     # save a variable to show we already tried resetting the oauth
                     oauth_reset = True
-
-                # log the error is its not about authentication
-                with open('error_log.txt', 'a') as f:
-                    f.write(traceback.format_exc())
-                    f.write('\n')
-                    traceback.print_exc()
                 
     def run_loop(self):
         response = self.irc_socket.recv(2048).decode('UTF-8')
@@ -246,7 +240,7 @@ class Bot:
             # send the default response based on the message
             send_message(self.irc_socket, channel_name, self.default_responses[message])
 
-        elif message.startswith('$saves') or (message.startswith('!qed ') and channel_name.lower() == 'pencenter'):
+        elif message.startswith('$saves ') or (message.startswith('!qed ') and channel_name.lower() == 'pencenter'):
             # make sure theyre a mod
             if not (mod_status or channel_name.lower() == username.lower()):
                 send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
@@ -427,6 +421,9 @@ class Bot:
                 # create a string with a list of currently live channels
                 live_channels = 'Currently Live Channels: ' + ', '.join(data)
                 send_message(self.irc_socket, channel_name, live_channels)
+
+                # close our response
+                response.close()
 
                 return
 
