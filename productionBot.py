@@ -156,6 +156,9 @@ class Bot:
                     oauth_reset = False
                     
             except KeyboardInterrupt:
+                # refresh oauth so I dont have to manually
+                self.refresh_oauth()
+
                 # end the code and update everything
                 self.irc_socket.close()
 
@@ -429,6 +432,7 @@ class Bot:
 
         elif message.startswith('$reset'):
             self.refresh_oauth()
+            send_message(self.irc_socket, channel_name, 'server reloaded')
 
         elif message.startswith('$') and not message.startswith('$send'):
             # catch all other messages
