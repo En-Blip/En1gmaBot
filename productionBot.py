@@ -427,6 +427,9 @@ class Bot:
 
                 return
 
+        elif message.startswith('$reset'):
+            self.refresh_oauth()
+
         elif message.startswith('$') and not message.startswith('$send'):
             # catch all other messages
             send_message(self.irc_socket, channel_name, 'unknown command, type $commands for a list of commands')
@@ -487,6 +490,15 @@ class Bot:
             self.oauth_token = r.json()['access_token']
             self.refresh_token = r.json()['refresh_token']
             print(f'new oauth token: {self.oauth_token}')
+
+            # save the oauth token
+            with open(os.environ.get('JSON_FILEPATH')) as file:
+                credentials = json.load(file)
+                credentials["TWITCH_OAUTH_TOKEN"] = self.oauth_token
+
+            with open(os.environ.get('JSON_FILEPATH'), 'w') as file:
+                json.dump(credentials, file)
+
         except:
             print('refresh failed')
 
