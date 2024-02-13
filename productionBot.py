@@ -73,7 +73,7 @@ class Bot:
             credentials = json.load(file)
 
         self.gspread_filename = credentials["GSPREAD_FILENAME"]
-        self.oauth_token = f'oauth:{credentials["TWITCH_OAUTH_TOKEN"]}'
+        self.oauth_token = credentials["TWITCH_OAUTH_TOKEN"]
         self.client_id = credentials["TWITCH_CLIENT_ID"]
         self.refresh_token = credentials["TWITCH_REFRESH_TOKEN"]
         self.client_secret = credentials["TWITCH_CLIENT_SECRET"]
@@ -96,7 +96,7 @@ class Bot:
         self.irc_socket.connect((irc_server, irc_port))
 
         # Send the necessary IRC commands to authorize the bot
-        self.irc_socket.send(bytes(f'PASS {self.oauth_token}\r\n', 'UTF-8'))
+        self.irc_socket.send(bytes(f'PASS oauth:{self.oauth_token}\r\n', 'UTF-8'))
         self.irc_socket.send(bytes(f'NICK {bot_username}\r\n', 'UTF-8'))
         self.irc_socket.send(bytes(f'CAP REQ twitch.tv/tags\r\n', 'UTF-8'))
 
@@ -388,7 +388,7 @@ class Bot:
 
                 # use the twitch api to get the live channels that the bot follows
                 post_url = 'https://api.twitch.tv/helix/streams/followed?user_id=996414574'
-                authorization = f'Bearer {self.oauth_token[6:]}'
+                authorization = f'Bearer {self.oauth_token}'
                 client_id = self.client_id
 
                 # send the post request
@@ -495,6 +495,7 @@ class Bot:
             with open(os.environ.get('JSON_FILEPATH')) as file:
                 credentials = json.load(file)
                 credentials["TWITCH_OAUTH_TOKEN"] = self.oauth_token
+                credentials["TWITCH_REFRESH_TOKEN"] = self.refresh_token
 
             with open(os.environ.get('JSON_FILEPATH'), 'w') as file:
                 json.dump(credentials, file)
