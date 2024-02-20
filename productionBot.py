@@ -168,6 +168,8 @@ class Bot:
             except Exception as e:
                 # first try refreshing the oauth token
                 if not oauth_reset:
+                    print(e)
+
                     self.refresh_oauth()
 
                     # reconnect to the server
@@ -373,24 +375,24 @@ class Bot:
                 return
 
             # check the savecounter for that user
-            selected_username = message.split()[1]
+            selected_username = message.split()[1].lower()
 
+            # nomralize the username
             if selected_username.startswith('@'):
                 selected_username = selected_username[1:]
 
-            print("username: " + selected_username)
-
-            if selected_username.lower() in self.saves_counter:
-                user_saves = self.saves_counter[selected_username.lower()]
+            # pull the saves data
+            if selected_username in self.saves_counter:
+                user_saves = self.saves_counter[selected_username]
             else:
                 user_saves = [0] * (len(self.CHANNEL_COLUMNS) + 1)
 
-            print("saves: " + user_saves)
+            # create a string to show saves
+            saves_str = f'{selected_username} has saved the day {user_saves[-1]} times.'
 
-            saves_str = f'{message.split()[1]} has saved the day {sum(user_saves)} times.'
-
-            for i, channel_saves in enumerate(user_saves):
-                saves_str += f' {channel_saves} times in {self.CHANNEL_COLUMNS[i]},'
+            for i, channel_saves in np.ndenumerate(user_saves):
+                if i[0] < 6:
+                    saves_str += f' {channel_saves} times in {self.CHANNEL_COLUMNS[i[0]]},'
 
             send_message(self.irc_socket, channel_name, saves_str[:-1] + '.')
 
@@ -593,7 +595,7 @@ def open_sheet(filepath):
 
 
 bot_username = 'en1gmabot'
-channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation']
+channel_names = ['en1gmabot', 'en1gmaunknown']#, 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation']
 
 my_bot = Bot(bot_username, channel_names)
 my_bot.join_chat()
