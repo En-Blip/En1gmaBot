@@ -12,13 +12,12 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 '''
-CHANGELOG
-    added obi to the channels/saves
-    changed save fetching to better format sheet
-
-TODO
+ CHANGELOG
     add autho oauth
     fix live command for oauth
+
+TODO
+    fix checksaves command
     close api responses
 '''
 
@@ -170,6 +169,14 @@ class Bot:
                 # first try refreshing the oauth token
                 if not oauth_reset:
                     self.refresh_oauth()
+
+                    # reconnect to the server
+                    self.irc_socket.close()
+
+                    # try reconnecting to twitch if twitch disconnected
+                    self.authorize_bot(bot_username)
+
+                    self.join_chat()
 
                     # save a variable to show we already tried resetting the oauth
                     oauth_reset = True
@@ -371,10 +378,14 @@ class Bot:
             if selected_username.startswith('@'):
                 selected_username = selected_username[1:]
 
+            print("username: " + selected_username)
+
             if selected_username.lower() in self.saves_counter:
                 user_saves = self.saves_counter[selected_username.lower()]
             else:
                 user_saves = [0] * (len(self.CHANNEL_COLUMNS) + 1)
+
+            print("saves: " + user_saves)
 
             saves_str = f'{message.split()[1]} has saved the day {sum(user_saves)} times.'
 
@@ -432,6 +443,7 @@ class Bot:
 
         elif message.startswith('$reset'):
             self.refresh_oauth()
+            self.get_sheet_values()
             send_message(self.irc_socket, channel_name, 'server reloaded')
 
         elif message.startswith('$') and not message.startswith('$send'):
@@ -494,6 +506,7 @@ class Bot:
             self.oauth_token = r.json()['access_token']
             self.refresh_token = r.json()['refresh_token']
             print(f'new oauth token: {self.oauth_token}')
+            print(f'new refresh token: {self.refresh_token}')
 
             # save the oauth token
             with open(os.environ.get('JSON_FILEPATH')) as file:
