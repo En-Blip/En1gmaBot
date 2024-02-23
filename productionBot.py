@@ -1,13 +1,11 @@
 import socket
 import gspread
 import datetime
-import time
 import sys
 import json
 import requests
 import os
 import numpy as np
-import traceback
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
@@ -391,7 +389,7 @@ class Bot:
             saves_str = f'{selected_username} has saved the day {user_saves[-1]} times.'
 
             for i, channel_saves in np.ndenumerate(user_saves):
-                if i[0] < 6:
+                if i[0] < 6 and channel_saves > 0:
                     saves_str += f' {channel_saves} times in {self.CHANNEL_COLUMNS[i[0]]},'
 
             send_message(self.irc_socket, channel_name, saves_str[:-1] + '.')
