@@ -139,7 +139,7 @@ class Bot:
     def run(self):
 
         # store pencenters pop quiz answer
-        self.pq_ans = 'πa'
+        self.pq_ans = 'πaaskdjhaskhd'
 
         oauth_reset = False
 
@@ -207,7 +207,7 @@ class Bot:
                         send_message(self.irc_socket, channel, msg)
 
             # hack pencenters pop quizzes
-            if cleaned_response['username'] == 'pencenter' and cleaned_response['message'].startswith('What is ') and cleaned_response['message'].split(' ')[3] == '+':
+            if (cleaned_response['username'] == 'pencenter' or cleaned_response['username'] == 'sh0_bot') and cleaned_response['message'].startswith('What is ') and cleaned_response['message'].split(' ')[3] == '+':
                 # get the mesage
                 split_message = cleaned_response['message'].split(' ')
 
@@ -218,9 +218,9 @@ class Bot:
                 # if someone correctly answers the pop quiz, give them a qed
                 send_message(self.irc_socket, cleaned_response['channel_name'], f'!qed @{cleaned_response["username"]}')
                 self.increment_savecounter(cleaned_response["username"], cleaned_response['channel_name'])
-                self.pq_ans = 'πa'
+                self.pq_ans = 'πadsaldkjasm'
 
-            if cleaned_response['username'] == 'pencenter' and ' '.join(cleaned_response['message'].split(' ')[6:]).strip().lower() == 'QED points. pencenQed pencenQed pencenQed'.strip().lower():
+            if (cleaned_response['username'] == 'pencenter' or cleaned_response['username'] == 'sh0_bot') and ' '.join(cleaned_response['message'].split(' ')[6:]).strip().lower() == 'QED points. pencenQed pencenQed pencenQed'.strip().lower():
                 # increment the save counter
                 user_saves = self.increment_savecounter(cleaned_response['message'].split(' ')[2], cleaned_response['channel_name'], -1*int(cleaned_response['message'].split(' ')[5]))
 
@@ -389,8 +389,10 @@ class Bot:
             saves_str = f'{selected_username} has saved the day {user_saves[-1]} times.'
 
             for i, channel_saves in np.ndenumerate(user_saves):
-                if i[0] < 6 and channel_saves > 0:
+                if i[0] < 6 and channel_saves > 1:
                     saves_str += f' {channel_saves} times in {self.CHANNEL_COLUMNS[i[0]]},'
+                elif i[0] < 6 and channel_saves > 0:
+                    saves_str += f' 1 time in {self.CHANNEL_COLUMNS[i[0]]},'
 
             send_message(self.irc_socket, channel_name, saves_str[:-1] + '.')
 
