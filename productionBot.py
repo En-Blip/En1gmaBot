@@ -81,7 +81,7 @@ class Bot:
         self.get_sheet_values()
 
         # spreadsheet variables
-        self.CHANNEL_COLUMNS = ['dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko']
+        self.CHANNEL_COLUMNS = ['dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation']
 
     def authorize_bot(self, bot_username):
         # Set up the connection to the IRC server
@@ -583,7 +583,7 @@ def open_sheet(filepath):
     # convert the sheets to dictionaries
     default_responses = dict(zip(command_outputs.col_values(1), command_outputs.col_values(2)))
     command_desc_dict = dict(zip(command_descriptions.col_values(1), command_descriptions.col_values(2)))
-    saves_ints = np.array([[int(i) for i in saves_counter.col_values(j)[4:]] for j in range(2, 9)])
+    saves_ints = np.array([[int(i) for i in saves_counter.col_values(j)[4:]] for j in range(2, 10)])
     saves_dict = dict(zip(saves_counter.col_values(1)[4:], saves_ints.transpose()))
     user_positions = saves_counter.col_values(1)[4:]
 
