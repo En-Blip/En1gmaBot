@@ -135,6 +135,7 @@ class Bot:
 
         # update the cell
         self.saves_table.update(range_name=f'{letter}{5+user_save_index}', values=[[user_count[index]]])
+        self.saves_table.update(range_name=f'I{5+user_save_index}', values=[[user_count[-1]]])
 
         print('sheets successfully updated')
     
@@ -441,13 +442,13 @@ class Bot:
             send_message(self.irc_socket, channel_name, 'server reloaded')
 
         elif message.startswith('$leaderboard') or message.startswith('$lb'):
-            channel_index = self.CHANNEL_COLUMNS.index(channel_name)
 
             # check if they are asking for the total leaderboard
             if len(message.split()) == 2:
                 top_users = np.argsort([x[-1] for x in self.saves_counter.values()])
                 prefix = 'Overall saves leaderboard: '
             else:
+                channel_index = self.CHANNEL_COLUMNS.index(channel_name)
                 prefix = f'{channel_name} saves leaderboard: '
                 top_users = np.argsort([x[channel_index] for x in self.saves_counter.values()])
             # create a string with a list of currently live channels
@@ -600,7 +601,7 @@ def open_sheet(filepath):
 
 
 bot_username = 'en1gmabot'
-channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation']
+channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation', 'phobosdream']
 
 my_bot = Bot(bot_username, channel_names)
 my_bot.join_chat()
