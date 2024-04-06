@@ -54,6 +54,8 @@ SCHEDULE = {
     }
 }
 
+SPREADSHEET = "BetaDatabase"
+
 class Bot:
     def __init__(self, bot_username, channel_names):
         # initialize bot variables
@@ -75,10 +77,17 @@ class Bot:
         self.refresh_token = credentials["TWITCH_REFRESH_TOKEN"]
         self.client_secret = credentials["TWITCH_CLIENT_SECRET"]
         
-        self.authorize_bot(bot_username)
+        self.authorize_bot(bot_username) 
 
         # get spreadsheet values
         self.get_sheet_values()
+
+        # open the service account
+        gc = gspread.service_account(filename=self.gspread_filename)
+        self.spreadsheet = gc.open(SPREADSHEET)
+
+        # open and return data to the sheets
+        self.saves_table = self.spreadsheet.worksheet('SavesCounter') #SavesCounter
 
         # spreadsheet variables
         self.CHANNEL_COLUMNS = ['dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation']
@@ -106,16 +115,9 @@ class Bot:
         dependencies: open_sheet()'''
         self.command_descriptions, self.default_responses, self.saves_counter, self.user_positions = open_sheet(self.gspread_filename)
         
-    def update_sheet_values(self, username):
+    def update_sheet_values(self, username, index):
         '''a function that updates the values in my bot google sheet, specifically configured for this sheet
         dependencies: save_sheet()'''
-
-        # open the service account
-        gc = gspread.service_account(filename=self.gspread_filename)
-
-        spreadsheet = gc.open('En1gmaBot Database')
-        # open and return data to the sheets
-        saves_table = spreadsheet.worksheet('SavesCounter') #SavesCounter
 
         # get the index of the user's save in the table
         user_save_index = self.user_positions.index(username)
@@ -124,15 +126,13 @@ class Bot:
         user_count = self.saves_counter[username].tolist()
 
         # update the username (for first time saves)
-        saves_table.update(range_name=f'A{5+user_save_index}', values=[[username]])
+        self.saves_table.update(range_name=f'A{5+user_save_index}', values=[[username]])
 
         # update the table with the range of values
-        for j, val in enumerate(user_count):
-            # get the letter of the cell
-            letter = chr(ord('A') + j + 1)
+        letter = chr(ord('A') + index + 1)
 
-            # update the cell
-            saves_table.update(range_name=f'{letter}{5+user_save_index}', values=[[val]])
+        # update the cell
+        self.saves_table.update(range_name=f'{letter}{5+user_save_index}', values=[[user_count[index]]])
 
         print('sheets successfully updated')
     
@@ -293,7 +293,7 @@ class Bot:
                 gc = gspread.service_account(filename=self.gspread_filename)
 
                 # add the command to the database
-                spreadsheet = gc.open('En1gmaBot Database')
+                spreadsheet = gc.open(SPREADSHEET)
 
                 # open and return data to the sheets
                 command_outputs = spreadsheet.worksheet('Command Outputs') #Commands
@@ -485,7 +485,7 @@ class Bot:
             self.saves_counter[username][-1] = 1
 
         # update the spreadsheet for the savecounter
-        self.update_sheet_values(username)
+        self.update_sheet_values(username, self.CHANNEL_COLUMNS.index(channel_name))
 
         return self.saves_counter[username]
 
@@ -521,7 +521,6 @@ class Bot:
 
         except:
             print('refresh failed')
-
 
 def send_message(irc_socket, channel_name, message):
     irc_socket.send(bytes(f"PRIVMSG #{channel_name} :{message}\r\n", 'UTF-8'))
@@ -573,7 +572,7 @@ def open_sheet(filepath):
     # open the service account
     gc = gspread.service_account(filename=filepath)
 
-    spreadsheet = gc.open('En1gmaBot Database')
+    spreadsheet = gc.open(SPREADSHEET)
 
     # open and get the data from the sheets
     command_outputs = spreadsheet.worksheet('Command Outputs') #Commands
