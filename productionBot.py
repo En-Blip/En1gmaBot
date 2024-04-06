@@ -88,6 +88,8 @@ class Bot:
 
         # open and return data to the sheets
         self.saves_table = self.spreadsheet.worksheet('SavesCounter') #SavesCounter
+        self.command_outputs = self.spreadsheet.worksheet('Command Outputs') #Commands
+        self.command_descriptions = self.spreadsheet.worksheet('Command Descriptions') # Command Descriptions
 
         # spreadsheet variables
         self.CHANNEL_COLUMNS = ['dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation']
@@ -288,20 +290,10 @@ class Bot:
                 # add the command to the dictionary
                 self.command_descriptions["$" + message.split()[2]] = " ".join(message.split()[3:])
                 self.default_responses["$" + message.split()[2]] = " ".join(message.split()[3:])
-
-                # open the service account
-                gc = gspread.service_account(filename=self.gspread_filename)
-
-                # add the command to the database
-                spreadsheet = gc.open(SPREADSHEET)
-
-                # open and return data to the sheets
-                command_outputs = spreadsheet.worksheet('Command Outputs') #Commands
-                command_descriptions = spreadsheet.worksheet('Command Descriptions') # Command Descriptions
-
+                
                 # insert the rows
-                command_descriptions.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 2)
-                command_outputs.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 2)
+                self.command_descriptions.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 2)
+                self.command_outputs.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 2)
 
                 send_message(self.irc_socket, channel_name, f'command added \'{message.split()[2]}\'')
 
@@ -447,6 +439,20 @@ class Bot:
             self.refresh_oauth()
             self.get_sheet_values()
             send_message(self.irc_socket, channel_name, 'server reloaded')
+
+        elif message.startswith('$leaderboard') or message.startswith('$lb'):
+            channel_index = self.CHANNEL_COLUMNS.index(channel_name)
+
+            # check if they are asking for the total leaderboard
+            if len(message.split()) == 2:
+                top_users = np.argsort([x[-1] for x in self.saves_counter.values()])
+                prefix = 'Overall saves leaderboard: '
+            else:
+                prefix = f'{channel_name} saves leaderboard: '
+                top_users = np.argsort([x[channel_index] for x in self.saves_counter.values()])
+            # create a string with a list of currently live channels
+            leaderboard = prefix + ', '.join([list(self.saves_counter.keys())[i] for i in reversed(top_users[-5:])])
+            send_message(self.irc_socket, channel_name, leaderboard)
 
         elif message.startswith('$') and not message.startswith('$send'):
             # catch all other messages
