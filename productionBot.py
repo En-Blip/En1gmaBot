@@ -601,7 +601,7 @@ def open_sheet(filepath):
 
 
 bot_username = 'en1gmabot'
-channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation', 'phobosdream']
+channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation']
 
 my_bot = Bot(bot_username, channel_names)
 my_bot.join_chat()
