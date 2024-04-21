@@ -135,7 +135,7 @@ class Bot:
 
         # update the cell
         if user_count[-1] == 1:
-            for i in "BCDEFGHI":
+            for i in ["B","C","D","E","F","G","H","I"]:
                 self.saves_table.update(range_name=f'{i}{5+user_save_index+i}', values=[[user_count[ord(i)-ord('A')]]])
 
         self.saves_table.update(range_name=f'{letter}{5+user_save_index}', values=[[user_count[index]]])
