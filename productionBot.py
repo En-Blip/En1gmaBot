@@ -136,7 +136,7 @@ class Bot:
         # update the cell
         if user_count[-1] == 1:
             for i in ["B","C","D","E","F","G","H","I"]:
-                self.saves_table.update(range_name=f'{i}{5+user_save_index}', values=[[user_count[ord(i)-ord('A')]]])
+                self.saves_table.update(range_name=f'{i}{5+user_save_index}', values=[[user_count[ord(i)-ord('A')+1]]])
         else:
             self.saves_table.update(range_name=f'{letter}{5+user_save_index}', values=[[user_count[index]]])
             self.saves_table.update(range_name=f'I{5+user_save_index}', values=[[user_count[-1]]])
@@ -265,11 +265,11 @@ class Bot:
                 return
 
             # make sure it's a correct input
-            if len(message.strip().split()) != 2:
+            if len(message.strip().split()) != 2 and message.split[-1]:
                 send_message(self.irc_socket, channel_name, 'incorrect command usage, type $saves <username>')
                 return
 
-            # increment the savecounter for that user
+           # increment the savecounter for that user
             try:
                 user_saves = self.increment_savecounter(message.split()[1], channel_name)
 
