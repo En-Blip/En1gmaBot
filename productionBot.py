@@ -54,7 +54,7 @@ SCHEDULE = {
     }
 }
 
-SPREADSHEET = "BetaDatabase"
+SPREADSHEET = "En1gmabot Database"
 
 class Bot:
     def __init__(self, bot_username, channel_names):
@@ -136,10 +136,10 @@ class Bot:
         # update the cell
         if user_count[-1] == 1:
             for i in ["B","C","D","E","F","G","H","I"]:
-                self.saves_table.update(range_name=f'{i}{5+user_save_index}', values=[[0]])
-
-        self.saves_table.update(range_name=f'{letter}{5+user_save_index}', values=[[user_count[index]]])
-        self.saves_table.update(range_name=f'I{5+user_save_index}', values=[[user_count[-1]]])
+                self.saves_table.update(range_name=f'{i}{5+user_save_index}', values=[[user_count[ord(i)-ord('A')]]])
+        else:
+            self.saves_table.update(range_name=f'{letter}{5+user_save_index}', values=[[user_count[index]]])
+            self.saves_table.update(range_name=f'I{5+user_save_index}', values=[[user_count[-1]]])
 
         print('sheets successfully updated')
     
