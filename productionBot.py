@@ -54,7 +54,7 @@ SCHEDULE = {
     }
 }
 
-SPREADSHEET = "En1gmaBot Database"
+SPREADSHEET = "BetaDatabase"
 
 class Bot:
     def __init__(self, bot_username, channel_names):
@@ -134,6 +134,10 @@ class Bot:
         letter = chr(ord('A') + index + 1)
 
         # update the cell
+        if user_count[-1] == 1:
+            for i in "BCDEFGHI":
+                self.saves_table.update(range_name=f'{i}{5+user_save_index+i}', values=[[user_count[ord(i)-ord('A')]]])
+
         self.saves_table.update(range_name=f'{letter}{5+user_save_index}', values=[[user_count[index]]])
         self.saves_table.update(range_name=f'I{5+user_save_index}', values=[[user_count[-1]]])
 
@@ -190,7 +194,8 @@ class Bot:
             self.irc_socket.send(bytes('PONG\r\n', 'UTF-8'))
         else:
             if response.startswith(':'):
-                return
+                pass
+                #return
 
             cleaned_response = clean_response(response)
             if cleaned_response['mod_status']:
@@ -260,7 +265,7 @@ class Bot:
                 return
 
             # make sure it's a correct input
-            if len(message.split()) != 2:
+            if len(message.strip().split()) != 2:
                 send_message(self.irc_socket, channel_name, 'incorrect command usage, type $saves <username>')
                 return
 
