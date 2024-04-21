@@ -54,7 +54,7 @@ SCHEDULE = {
     }
 }
 
-SPREADSHEET = "En1gmabot Database"
+SPREADSHEET = "En1gmaBot Database"
 
 class Bot:
     def __init__(self, bot_username, channel_names):
