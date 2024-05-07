@@ -294,7 +294,6 @@ class Bot:
                 send_message(self.irc_socket, channel_name, 'incorrect command usage, you do not have to surround your command name in quotes')
             else:
                 # add the command to the dictionary
-                self.command_descriptions["$" + message.split()[2]] = " ".join(message.split()[3:])
                 self.default_responses["$" + message.split()[2]] = " ".join(message.split()[3:])
                 
                 # insert the rows
