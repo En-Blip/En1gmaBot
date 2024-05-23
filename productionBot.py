@@ -464,11 +464,11 @@ class Bot:
 
         elif message.startswith('$queue') or message.startswith('$q'):
             self.question_queue[channel_name].append([username, message.split()[1:]])
-            send_message(self.irc_socket, channel_name, f"you are in queue position {len(self.question_queue[channel_name])+1}")
+            send_message(self.irc_socket, channel_name, f"you are in queue position {len(self.question_queue[channel_name])}")
         
         elif message == '$pushqueue' or message == '$pushq':
             if len(self.question_queue[channel_name]) > 0:
-                next_question = self.question_queue[channel_name].pop()
+                next_question = self.question_queue[channel_name].pop(0)
                 print(channel_name)
                 send_message(self.irc_socket, channel_name, f"{next_question[0]} asks {' '.join(next_question[1])}")
             else:
