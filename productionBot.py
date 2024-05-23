@@ -464,12 +464,14 @@ class Bot:
 
         elif message.startswith('$queue'):
             self.question_queue[channel_name].append([username, message.split()[1:]])
-            send_message(self.irc_socket, channel_name, 'you are in queue position' + len(self.question_queue[channel_name]))
+            send_message(self.irc_socket, channel_name, 'you are in queue position' + len(self.question_queue[channel_name])+1)
         
         elif message == '$pushqueue':
-            self.question_queue[channel_name].pop()
-            next_question = self.question_queue[channel_name][0]
-            send_message(self.irc_socket, channel_name, f'@{next_question[0]} asks {next_question[1]}')
+            if len(self.question_queue[channel_name]) > 0:
+                next_question = self.question_queue[channel_name].pop()
+                send_message(self.irc_socket, channel_name, f'@{next_question[0]} asks {' '.join(next_question[1])}')
+            else:
+                send_message(self.irc_socket, channel_name, 'no more questions in queue')
 
         elif message.startswith('$') and not message.startswith('$send'):
             # catch all other messages
