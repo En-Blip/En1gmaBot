@@ -467,11 +467,19 @@ class Bot:
             send_message(self.irc_socket, channel_name, f"you are in queue position {len(self.question_queue[channel_name])}")
         
         elif message == '$pushqueue' or message == '$pushq':
+            # make sure theyre a mod
+            if not (mod_status or channel_name.lower() == username.lower()):
+                send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
+                return
+
+            # if there are questions in the queue
             if len(self.question_queue[channel_name]) > 0:
+                # get the next question
                 next_question = self.question_queue[channel_name].pop(0)
                 print(channel_name)
                 send_message(self.irc_socket, channel_name, f"{next_question[0]} asks {' '.join(next_question[1])}")
             else:
+                # if there are no questions in the queue
                 print(channel_name)
                 send_message(self.irc_socket, channel_name, 'no more questions in queue')
 
