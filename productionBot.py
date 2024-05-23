@@ -463,7 +463,7 @@ class Bot:
             send_message(self.irc_socket, channel_name, leaderboard)
 
         elif message.startswith('$queue'):
-            self.question_queue[channel_name].push([username, message.split()[1:]])
+            self.question_queue[channel_name].append([username, message.split()[1:]])
             send_message(self.irc_socket, channel_name, 'you are in queue position' + len(self.question_queue[channel_name]))
         
         elif message == '$pushqueue':
