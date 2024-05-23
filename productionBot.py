@@ -91,6 +91,9 @@ class Bot:
         self.command_outputs = self.spreadsheet.worksheet('Command Outputs') #Commands
         self.command_descriptions = self.spreadsheet.worksheet('Command Descriptions') # Command Descriptions
 
+        # populate the question queue with individual queues for streamers
+        self.question_queue = {streamer:[] for streamer in self.channel_names}
+
         # spreadsheet variables
         self.CHANNEL_COLUMNS = ['dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation']
 
@@ -458,6 +461,15 @@ class Bot:
             # create a string with a list of currently live channels
             leaderboard = prefix + ', '.join([list(self.saves_counter.keys())[i] for i in reversed(top_users[-5:])])
             send_message(self.irc_socket, channel_name, leaderboard)
+
+        elif message.startswith('$queue'):
+            self.question_queue[channel_name].push([username, message.split()[1:]])
+            send_message(self.irc_socket, channel_name, 'you are in queue position' + len(self.question_queue[channel_name]))
+        
+        elif message == '$pushqueue':
+            self.question_queue[channel_name].pop()
+            next_question = self.question_queue[channel_name][0]
+            send_message(self.irc_socket, channel_name, f'@{next_question[0]} asks {next_question[1]}')
 
         elif message.startswith('$') and not message.startswith('$send'):
             # catch all other messages
