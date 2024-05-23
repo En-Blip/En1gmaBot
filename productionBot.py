@@ -470,7 +470,7 @@ class Bot:
             if len(self.question_queue[channel_name]) > 0:
                 next_question = self.question_queue[channel_name].pop()
                 print(channel_name)
-                send_message(self.irc_socket, channel_name, f'{next_question[0]} asks {' '.join(next_question[1])}')
+                send_message(self.irc_socket, channel_name, f"{next_question[0]} asks {' '.join(next_question[1])}")
             else:
                 print(channel_name)
                 send_message(self.irc_socket, channel_name, 'no more questions in queue')
