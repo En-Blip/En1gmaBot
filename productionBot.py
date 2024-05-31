@@ -91,8 +91,6 @@ class Bot:
         self.command_outputs = self.spreadsheet.worksheet('Command Outputs') #Commands
         self.command_desc = self.spreadsheet.worksheet('Command Descriptions') # Command Descriptions
 
-        self.command_items = dict(zip(self.command_names, self.command_text))
-
         # populate the question queue with individual queues for streamers
         self.question_queue = {streamer:[] for streamer in self.channel_names}
 
