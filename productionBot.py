@@ -89,10 +89,7 @@ class Bot:
         # open and return data to the sheets
         self.saves_table = self.spreadsheet.worksheet('SavesCounter') #SavesCounter
         self.command_outputs = self.spreadsheet.worksheet('Command Outputs') #Commands
-        self.command_descriptions = self.spreadsheet.worksheet('Command Descriptions') # Command Descriptions
-
-        self.command_names = self.command_descriptions.col_values(1)
-        self.command_text = self.command_descriptions.col_values(2)
+        self.command_desc = self.spreadsheet.worksheet('Command Descriptions') # Command Descriptions
 
         self.command_items = dict(zip(self.command_names, self.command_text))
 
@@ -253,8 +250,8 @@ class Bot:
 
         if message.endswith('help'):
             # send the command description
-            if ' '.join(message.split()[:-1]) in self.command_items.keys():
-                send_message(self.irc_socket, channel_name, f'{self.command_items[" ".join(message.split()[:-1])]}')
+            if ' '.join(message.split()[:-1]) in self.command_descriptions.keys():
+                send_message(self.irc_socket, channel_name, f'{self.command_descriptions[" ".join(message.split()[:-1])]}')
             else:
                 # fix this for command add help
                 send_message(self.irc_socket, channel_name, 'unknown command, type $commands for a list of commands')
@@ -302,7 +299,7 @@ class Bot:
                 self.default_responses["$" + message.split()[2]] = " ".join(message.split()[3:])
                 
                 # insert the rows
-                self.command_descriptions.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 2)
+                self.command_desc.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 2)
                 self.command_outputs.insert_row(["$" + message.split()[2], " ".join(message.split()[3:])], 2)
 
                 send_message(self.irc_socket, channel_name, f'command added \'{message.split()[2]}\'')
@@ -485,7 +482,7 @@ class Bot:
                 print(channel_name)
                 send_message(self.irc_socket, channel_name, 'no more questions in queue')
 
-        elif message == 'clearqueue' or message == 'clearq':
+        elif message == '$clearqueue' or message == '$clearq':
             # make sure theyre a mod
             if not (mod_status or channel_name.lower() == username.lower()):
                 send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
