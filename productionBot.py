@@ -91,6 +91,11 @@ class Bot:
         self.command_outputs = self.spreadsheet.worksheet('Command Outputs') #Commands
         self.command_descriptions = self.spreadsheet.worksheet('Command Descriptions') # Command Descriptions
 
+        self.command_names = self.command_descriptions.col_values(1)
+        self.command_text = self.command_descriptions.col_values(2)
+
+        self.command_items = dict(zip(self.command_names, self.command_text))
+
         # populate the question queue with individual queues for streamers
         self.question_queue = {streamer:[] for streamer in self.channel_names}
 
@@ -247,12 +252,9 @@ class Bot:
         mod_status = response['mod_status']
 
         if message.endswith('help'):
-            # simplify the decription dictionary
-            simplified_command_desc_dict = {i[0].split()[0]:i[1] for i in self.command_descriptions.items()}
-
             # send the command description
-            if ' '.join(message.split()[:-1]) in simplified_command_desc_dict.keys():
-                send_message(self.irc_socket, channel_name, f'{simplified_command_desc_dict[" ".join(message.split()[:-1])]}')
+            if ' '.join(message.split()[:-1]) in self.command_items.keys():
+                send_message(self.irc_socket, channel_name, f'{self.command_items[" ".join(message.split()[:-1])]}')
             else:
                 # fix this for command add help
                 send_message(self.irc_socket, channel_name, 'unknown command, type $commands for a list of commands')
@@ -462,9 +464,9 @@ class Bot:
             leaderboard = prefix + ', '.join([list(self.saves_counter.keys())[i] for i in reversed(top_users[-5:])])
             send_message(self.irc_socket, channel_name, leaderboard)
 
-        elif message.startswith('$queue') or message.startswith('$q'):
+        elif message.startswith('$queue ') or message.startswith('$q ') or message.startswith('question '):
             self.question_queue[channel_name].append([username, message.split()[1:]])
-            send_message(self.irc_socket, channel_name, f"you are in queue position {len(self.question_queue[channel_name])}")
+            send_message(self.irc_socket, channel_name, f"{username} you are in queue position {len(self.question_queue[channel_name])}")
         
         elif message == '$pushqueue' or message == '$pushq':
             # make sure theyre a mod
@@ -482,6 +484,16 @@ class Bot:
                 # if there are no questions in the queue
                 print(channel_name)
                 send_message(self.irc_socket, channel_name, 'no more questions in queue')
+
+        elif message == 'clearqueue' or message == 'clearq':
+            # make sure theyre a mod
+            if not (mod_status or channel_name.lower() == username.lower()):
+                send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
+                return
+
+            # clear the question queue
+            self.question_queue[channel_name] = []
+            send_message(self.irc_socket, channel_name, 'question queue cleared')
 
         elif message.startswith('$') and not message.startswith('$send'):
             # catch all other messages
