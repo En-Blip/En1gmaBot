@@ -7,6 +7,7 @@ import requests
 import os
 import numpy as np
 import warnings
+import traceback
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 '''
@@ -181,7 +182,11 @@ class Bot:
             except Exception as e:
                 # first try refreshing the oauth token
                 if not oauth_reset:
-                    print(e)
+                    tb = traceback.format_exc()
+                    # find the line number where the exception occurred
+                    line_number = traceback.extract_tb(tb)[-1][1]
+
+                    print('exception occurred on line:', line_number, 'with error:', e)
 
                     self.refresh_oauth()
 
@@ -278,7 +283,8 @@ class Bot:
            # increment the savecounter for that user
             try:
                 if len(message.strip().split()) == 3:
-                    user_saves = self.increment_savecounter(message.split()[1], channel_name, int(message.split()[2]))
+                    print(int(message.split()[2]))
+                    user_saves = self.increment_savecounter(message.split()[1], channel_name, int(message.split()[-1]))
                 else:
                     user_saves = self.increment_savecounter(message.split()[1], channel_name)
 
