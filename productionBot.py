@@ -186,7 +186,7 @@ class Bot:
                     # find the line number where the exception occurred
                     line_number = traceback.extract_tb(tb)[-1][1]
 
-                    print('exception occurred on line:', line_number, 'with error:', e)
+                    print(f"An exception occurred on line {line_number}: {str(e)}")
 
                     self.refresh_oauth()
 
