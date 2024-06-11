@@ -278,9 +278,9 @@ class Bot:
            # increment the savecounter for that user
             try:
                 if len(message.strip().split()) == 3:
-                    user_saves = self.increment_savecounter(message.split()[1], channel_name, int(message.split(' ')[2]))
-
-                user_saves = self.increment_savecounter(message.split()[1], channel_name)
+                    user_saves = self.increment_savecounter(message.split()[1], channel_name, int(message.split()[2]))
+                else:
+                    user_saves = self.increment_savecounter(message.split()[1], channel_name)
 
             except Exception as e:
                 send_message(self.irc_socket, channel_name, e)
