@@ -276,7 +276,7 @@ class Bot:
                 
 
             # make sure it's a correct input
-            if len(message.strip().split()) != 2 and message.split[-1] and len(message.strip().split()) != 3:
+            if len(message.strip().split()) != 2 and message.split()[-1] and len(message.strip().split()) != 3:
                 send_message(self.irc_socket, channel_name, 'incorrect command usage, type $saves <username>')
                 return
 
