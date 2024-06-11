@@ -56,6 +56,11 @@ SCHEDULE = {
 
 SPREADSHEET = "En1gmaBot Database"
 
+class Streamer:
+    def __init__(self, settings):
+        raid_message = settings['raid_message']
+        new_chatter = settings['new_chatter']
+
 class Bot:
     def __init__(self, bot_username, channel_names):
         # initialize bot variables
@@ -63,8 +68,6 @@ class Bot:
         self.channel_names = channel_names
         self.synced_channels = []
         self.mods = {}
-
-        self.gspread_filename = 'En1gmaBot_v1.1.1'
         
         # get the oauth token/gspread filename
         # get it from the protected json file
@@ -96,6 +99,8 @@ class Bot:
 
         # spreadsheet variables
         self.CHANNEL_COLUMNS = ['dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation']
+
+        # grab stream-specific variables
 
     def authorize_bot(self, bot_username):
         # Set up the connection to the IRC server
@@ -263,14 +268,18 @@ class Bot:
             if not (mod_status or channel_name.lower() == username.lower()):
                 send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
                 return
+                
 
             # make sure it's a correct input
-            if len(message.strip().split()) != 2 and message.split[-1]:
+            if len(message.strip().split()) != 2 and message.split[-1] and len(message.strip().split()) != 3:
                 send_message(self.irc_socket, channel_name, 'incorrect command usage, type $saves <username>')
                 return
 
            # increment the savecounter for that user
             try:
+                if len(message.strip().split()) == 3:
+                    user_saves = self.increment_savecounter(message.split()[1], channel_name, int(message.split(' ')[2]))
+
                 user_saves = self.increment_savecounter(message.split()[1], channel_name)
 
             except Exception as e:
@@ -449,8 +458,14 @@ class Bot:
 
             # check if they are asking for the total leaderboard
             if len(message.split()) == 2:
-                top_users = np.argsort([x[-1] for x in self.saves_counter.values()])
-                prefix = 'Overall saves leaderboard: '
+                # figure out who they are asking for
+                if message.split()[1].lower() in self.CHANNEL_COLUMNS:
+                    channel_index = self.CHANNEL_COLUMNS.index(channel_name)
+                    prefix = f'{channel_name} saves leaderboard: '
+                    top_users = np.argsort([x[channel_index] for x in self.saves_counter.values()])
+                else:
+                    top_users = np.argsort([x[-1] for x in self.saves_counter.values()])
+                    prefix = 'Overall saves leaderboard: '
             else:
                 channel_index = self.CHANNEL_COLUMNS.index(channel_name)
                 prefix = f'{channel_name} saves leaderboard: '
