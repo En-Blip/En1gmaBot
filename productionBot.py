@@ -182,10 +182,10 @@ class Bot:
             except Exception as e:
                 # first try refreshing the oauth token
                 if not oauth_reset:
-                    tb = traceback.format_exc()
+                    # get the traceback
+                    tb = sys.exc_info()[2]
                     # find the line number where the exception occurred
                     line_number = traceback.extract_tb(tb)[-1][1]
-
                     print(f"An exception occurred on line {line_number}: {str(e)}")
 
                     self.refresh_oauth()
