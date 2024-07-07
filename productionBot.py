@@ -92,6 +92,7 @@ class Bot:
 
         # open and return data to the sheets
         self.saves_table = self.spreadsheet.worksheet('SavesCounter') #SavesCounter
+        self.quiz_table = self.spreadsheet.worksheet('QuizCounter') #QuizCounter
         self.command_outputs = self.spreadsheet.worksheet('Command Outputs') #Commands
         self.command_desc = self.spreadsheet.worksheet('Command Descriptions') # Command Descriptions
 
@@ -101,7 +102,10 @@ class Bot:
         # spreadsheet variables
         self.CHANNEL_COLUMNS = ['dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation']
 
-        # grab stream-specific variables
+        # grab stream-specific variables, like quiz answers and quiz state
+        self.quiz_state = [] # stores the channels in "quiz state"
+        self.quiz_answers_u = [] # stores the answers for users in thechannels in "quiz state"
+        self.quiz_answers_a = []
 
     def authorize_bot(self, bot_username):
         # Set up the connection to the IRC server
@@ -124,8 +128,8 @@ class Bot:
     def get_sheet_values(self):
         '''a function that opens and stores data from my bot google sheet, specifically configured for this sheet
         dependencies: open_sheet()'''
-        self.command_descriptions, self.default_responses, self.saves_counter, self.user_positions = open_sheet(self.gspread_filename)
-        
+        self.command_descriptions, self.default_responses, self.saves_counter, self.quiz_counter, self.user_positions, self.quiz_user_positions = open_sheet(self.gspread_filename)
+
     def update_sheet_values(self, username, index):
         '''a function that updates the values in my bot google sheet, specifically configured for this sheet
         dependencies: save_sheet()'''
@@ -149,6 +153,27 @@ class Bot:
         else:
             self.saves_table.update(range_name=f'{letter}{5+user_save_index}', values=[[user_count[index]]])
             self.saves_table.update(range_name=f'I{5+user_save_index}', values=[[user_count[-1]]])
+
+    def update_quiz_sheet(self, username, index):
+        # get the index of the user's save in the table
+        user_quiz_index = self.quiz_user_positions.index(username)
+
+        # get the dictionary's save values for that user
+        quiz_user_count = self.quiz_counter[username].tolist()
+
+        # update the username (for first time saves)
+        self.quiz_table.update(range_name=f'A{5+user_quiz_index}', values=[[username]])
+
+        # update the table with the range of values
+        letter = chr(ord('A') + index + 1)
+
+        # update the cell
+        if quiz_user_count[-1] == 1:
+            for i in ["B","C","D","E","F","G","H","I"]:
+                self.quiz_table.update(range_name=f'{i}{5+user_quiz_index}', values=[[quiz_user_count[ord(i)-ord('A')-1]]])
+        else:
+            self.quiz_table.update(range_name=f'{letter}{5+user_quiz_index}', values=[[quiz_user_count[index]]])
+            self.quiz_table.update(range_name=f'I{5+user_quiz_index}', values=[[quiz_user_count[-1]]])
 
         print('sheets successfully updated')
     
@@ -248,7 +273,26 @@ class Bot:
             # reply to chat messages
             if cleaned_response['message'].startswith('$') or cleaned_response['message'].startswith('!'):
                 self.reply_to_message(cleaned_response)
-        
+
+            # add quiz status to look for quiz answers
+            if cleaned_response['channel_name'] in self.quiz_state:
+                self.run_quiz(cleaned_response)
+
+    def run_quiz(self, response):
+        channel = response['channel_name']
+        message = response['message']
+        username = response['username']
+
+        # add a function to run the quiz
+        if channel == 'actualeducation' or channel == 'en1gmaunknown':
+            # collect chat answers
+            if message.startswith('$answer ') and username not in self.quiz_answers_u:
+                self.quiz_answers_u.append(username)
+                self.quiz_answers_a.append(' '.join(message.split()[1:]).lower().strip())
+            elif username in self.quiz_answers_u:
+                send_message(self.irc_socket, channel, 'you have already answered this question')
+    
+
     def reply_to_message(self, response):
         # get the message and response
         message = response['message'].lower().strip()
@@ -511,6 +555,75 @@ class Bot:
             self.question_queue[channel_name] = []
             send_message(self.irc_socket, channel_name, 'question queue cleared')
 
+        # commands specific to quizzes
+        elif message == '$startquiz':
+            # make sure theyre a mod
+            if not (mod_status or channel_name.lower() == username.lower() or username == 'en1gmaunknown'):
+                send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
+                return
+
+            if channel_name in self.quiz_state:
+                send_message(self.irc_socket, channel_name, 'quiz already started')
+                return
+            
+            self.quiz_state.append(channel_name)
+            send_message(self.irc_socket, channel_name, 'quiz started. type $answer <answer> in chat to submit your answer!')
+        elif message == '$closequiz' or message == '$stopquiz':
+            # make sure theyre a mod
+            if not (mod_status or channel_name.lower() == username.lower() or username == 'en1gmaunknown'):
+                send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
+                return
+
+            if channel_name not in self.quiz_state:
+                send_message(self.irc_socket, channel_name, 'quiz not started')
+                return
+
+            self.quiz_state.remove(channel_name)
+            send_message(self.irc_socket, channel_name, 'quiz submissions closed')
+        
+        elif message.startswith('$scorequiz'):
+            # make sure theyre a mod
+            if not (mod_status or channel_name.lower() == username.lower() or username == 'en1gmaunknown'):
+                send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
+                return
+            
+            if channel_name in self.quiz_state:
+                self.quiz_state.remove(channel_name)
+            
+            if len(message.split()) != 2:
+                send_message(self.irc_socket, channel_name, 'incorrect command usage, type $scorequiz <correct answer>')
+                return
+
+            correct_answer = ' '.join(message.split()[1:]).lower().strip()
+            total_points = 0
+
+            # variable to see if the first correct answer has been found
+            first_correct = False
+            for user, answer in zip(self.quiz_answers_u, self.quiz_answers_a):
+                if answer == correct_answer:
+                    if not first_correct:
+                        send_message(self.irc_socket, channel_name, f'{user} got the first correct answer!')
+                        first_correct = True
+                        # increment the quiz savecounter for that user
+                        self.increment_quizcounter(user, channel_name, 3)
+                        total_points += 3
+                    else:
+                        self.increment_quizcounter(user, channel_name, 2)
+                        total_points += 2
+                else:
+                    self.increment_quizcounter(user, channel_name, 1)
+                    total_points += 1
+            
+            send_message(self.irc_socket, channel_name, f'Congratulations everyone! {total_points} points were awarded!')
+
+            self.quiz_answers_a = []
+            self.quiz_answers_u = []
+
+        # pass through quiz answers      
+        elif message.startswith('$answer '):
+            if channel_name not in self.quiz_state:
+                send_message(self.irc_socket, channel_name, 'quiz is not active')
+
         elif message.startswith('$') and not message.startswith('$send'):
             # catch all other messages
             send_message(self.irc_socket, channel_name, 'unknown command, type $commands for a list of commands')
@@ -544,13 +657,53 @@ class Bot:
             self.user_positions.append(username)
 
             # initialize the total and first save
-            self.saves_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] = 1
-            self.saves_counter[username][-1] = 1
+            self.saves_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] = increment
+            self.saves_counter[username][-1] = increment
 
         # update the spreadsheet for the savecounter
         self.update_sheet_values(username, self.CHANNEL_COLUMNS.index(channel_name))
 
         return self.saves_counter[username]
+
+
+# change to quizcounter
+    def increment_quizcounter(self, username, channel_name, increment=1):
+        '''increment the savecounter for that user
+        Parameters: username (str), channel_name (str)
+        Returns: users number of saves'''
+
+        # remove the @ to normalize usernames
+        if username.startswith('@'):
+            username = username[1:]
+
+        # strip and lower usernames
+        username = username.strip().lower()
+        channel_name = channel_name.strip().lower() #dont think this does anything
+
+        # make sure the channel name is in the list
+        if channel_name not in self.CHANNEL_COLUMNS:
+            raise Exception(f'{channel_name} not in self.CHANNEL_COLUMNS')
+
+        # make sure the username is in the dict, and add it if its not
+        if username in self.quiz_counter:
+            # increment the total and next save
+            self.quiz_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] += increment
+            self.quiz_counter[username][-1] += increment
+
+        else:
+            # create the user in the dict and our positions list
+            self.quiz_counter[username] = np.zeros(len(self.CHANNEL_COLUMNS) + 1, dtype=int)
+            self.quiz_user_positions.append(username)
+
+            # initialize the total and first save
+            self.quiz_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] = increment
+            self.quiz_counter[username][-1] = increment
+
+        # update the spreadsheet for the savecounter
+        self.update_quiz_sheet(username, self.CHANNEL_COLUMNS.index(channel_name))
+
+        return self.quiz_counter[username]
+
 
     def refresh_oauth(self):
         # get the parameters for our post request'
@@ -641,17 +794,21 @@ def open_sheet(filepath):
     command_outputs = spreadsheet.worksheet('Command Outputs') #Commands
     command_descriptions = spreadsheet.worksheet('Command Descriptions') # Command Descriptions
     saves_counter = spreadsheet.worksheet('SavesCounter') #SavesCounter
+    quiz_counter = spreadsheet.worksheet('QuizCounter') #QuizCounter
 
     # convert the sheets to dictionaries
     default_responses = dict(zip(command_outputs.col_values(1), command_outputs.col_values(2)))
     command_desc_dict = dict(zip(command_descriptions.col_values(1), command_descriptions.col_values(2)))
     saves_ints = np.array([[int(i) for i in saves_counter.col_values(j)[4:]] for j in range(2, 10)])
+    quiz_ints = np.array([[int(i) for i in quiz_counter.col_values(j)[4:]] for j in range(2, 10)])
     saves_dict = dict(zip(saves_counter.col_values(1)[4:], saves_ints.transpose()))
+    quiz_dict = dict(zip(quiz_counter.col_values(1)[4:], quiz_ints.transpose()))
+    quiz_user_positions = quiz_counter.col_values(1)[4:]
     user_positions = saves_counter.col_values(1)[4:]
 
 
 
-    return (command_desc_dict, default_responses, saves_dict, user_positions)
+    return (command_desc_dict, default_responses, saves_dict, quiz_dict, user_positions, quiz_user_positions)
 
 
 
