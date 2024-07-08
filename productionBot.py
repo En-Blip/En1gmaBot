@@ -289,7 +289,7 @@ class Bot:
             if message.startswith('$answer ') and username not in self.quiz_answers_u:
                 self.quiz_answers_u.append(username)
                 self.quiz_answers_a.append(' '.join(message.split()[1:]).lower().strip())
-            elif username in self.quiz_answers_u:
+            elif username in self.quiz_answers_u and message.startswith('$answer '):
                 send_message(self.irc_socket, channel, 'you have already answered this question')
     
 
