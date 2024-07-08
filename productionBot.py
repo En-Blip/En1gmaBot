@@ -130,7 +130,7 @@ class Bot:
         dependencies: open_sheet()'''
         self.command_descriptions, self.default_responses, self.saves_counter, self.quiz_counter, self.user_positions, self.quiz_user_positions = open_sheet(self.gspread_filename)
 
-    def update_sheet_values(self, username, index):
+    def update_sheet_values(self, username, index, first = False):
         '''a function that updates the values in my bot google sheet, specifically configured for this sheet
         dependencies: save_sheet()'''
 
@@ -147,14 +147,14 @@ class Bot:
         letter = chr(ord('A') + index + 1)
 
         # update the cell
-        if user_count[-1] == 1:
+        if first:
             for i in ["B","C","D","E","F","G","H","I"]:
                 self.saves_table.update(range_name=f'{i}{5+user_save_index}', values=[[user_count[ord(i)-ord('A')-1]]])
         else:
             self.saves_table.update(range_name=f'{letter}{5+user_save_index}', values=[[user_count[index]]])
             self.saves_table.update(range_name=f'I{5+user_save_index}', values=[[user_count[-1]]])
 
-    def update_quiz_sheet(self, username, index):
+    def update_quiz_sheet(self, username, index, first = False):
         # get the index of the user's save in the table
         user_quiz_index = self.quiz_user_positions.index(username)
 
@@ -168,7 +168,7 @@ class Bot:
         letter = chr(ord('A') + index + 1)
 
         # update the cell
-        if quiz_user_count[-1] == 1:
+        if first:
             for i in ["B","C","D","E","F","G","H","I"]:
                 self.quiz_table.update(range_name=f'{i}{5+user_quiz_index}', values=[[quiz_user_count[ord(i)-ord('A')-1]]])
         else:
@@ -651,6 +651,9 @@ class Bot:
             self.saves_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] += increment
             self.saves_counter[username][-1] += increment
 
+            # update the sheet
+            self.update_sheet_values(username, self.CHANNEL_COLUMNS.index(channel_name))
+
         else:
             # create the user in the dict and our positions list
             self.saves_counter[username] = np.zeros(len(self.CHANNEL_COLUMNS) + 1, dtype=int)
@@ -660,8 +663,7 @@ class Bot:
             self.saves_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] = increment
             self.saves_counter[username][-1] = increment
 
-        # update the spreadsheet for the savecounter
-        self.update_sheet_values(username, self.CHANNEL_COLUMNS.index(channel_name))
+            self.update_sheet_values(username, self.CHANNEL_COLUMNS.index(channel_name), first=True)
 
         return self.saves_counter[username]
 
@@ -690,6 +692,9 @@ class Bot:
             self.quiz_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] += increment
             self.quiz_counter[username][-1] += increment
 
+            # update the spreadsheet for the savecounter
+            self.update_quiz_sheet(username, self.CHANNEL_COLUMNS.index(channel_name))
+
         else:
             # create the user in the dict and our positions list
             self.quiz_counter[username] = np.zeros(len(self.CHANNEL_COLUMNS) + 1, dtype=int)
@@ -699,8 +704,9 @@ class Bot:
             self.quiz_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] = increment
             self.quiz_counter[username][-1] = increment
 
-        # update the spreadsheet for the savecounter
-        self.update_quiz_sheet(username, self.CHANNEL_COLUMNS.index(channel_name))
+            # update the spreadsheet for the savecounter
+            self.update_quiz_sheet(username, self.CHANNEL_COLUMNS.index(channel_name), first=True)
+
 
         return self.quiz_counter[username]
 
