@@ -284,7 +284,7 @@ class Bot:
         username = response['username']
 
         # add a function to run the quiz
-        if channel == 'actualeducation' or channel == 'en1gmaunknown':
+        if True: #channel == 'actualeducation' or channel == 'en1gmaunknown':
             # collect chat answers
             if message.startswith('$answer ') and username not in self.quiz_answers_u:
                 self.quiz_answers_u.append(username)
