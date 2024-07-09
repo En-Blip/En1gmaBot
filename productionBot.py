@@ -55,7 +55,7 @@ SCHEDULE = {
     }
 }
 
-SPREADSHEET = "En1gmabot Database"
+SPREADSHEET = "En1gmaBot Database"
 
 class Streamer:
     def __init__(self, settings):
