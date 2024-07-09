@@ -55,7 +55,7 @@ SCHEDULE = {
     }
 }
 
-SPREADSHEET = "En1gmaBot Database"
+SPREADSHEET = "En1gmabot Database"
 
 class Streamer:
     def __init__(self, settings):
@@ -148,11 +148,13 @@ class Bot:
 
         # update the cell
         if first:
-            for i in ["B","C","D","E","F","G","H","I"]:
+            for i in ["B","C","D","E","F","G","H"]:
                 self.saves_table.update(range_name=f'{i}{5+user_save_index}', values=[[user_count[ord(i)-ord('A')-1]]])
+
+                self.saves_table.update(range_name=f'I{5+user_save_index}', values='=sum(INDIRECT("A" & ROW() & ":H" & ROW()))', value_input_option='USER_ENTERED')
         else:
             self.saves_table.update(range_name=f'{letter}{5+user_save_index}', values=[[user_count[index]]])
-            self.saves_table.update(range_name=f'I{5+user_save_index}', values=[[user_count[-1]]])
+            #self.saves_table.update(range_name=f'I{5+user_save_index}', values=[[user_count[-1]]])
 
     def update_quiz_sheet(self, username, index, first = False):
         # get the index of the user's save in the table
@@ -169,11 +171,13 @@ class Bot:
 
         # update the cell
         if first:
-            for i in ["B","C","D","E","F","G","H","I"]:
+            for i in ["B","C","D","E","F","G","H"]:
                 self.quiz_table.update(range_name=f'{i}{5+user_quiz_index}', values=[[quiz_user_count[ord(i)-ord('A')-1]]])
+
+                self.saves_table.update(range_name=f'I{5+user_quiz_index}', values='=sum(INDIRECT("A" & ROW() & ":H" & ROW()))', value_input_option='USER_ENTERED')
         else:
             self.quiz_table.update(range_name=f'{letter}{5+user_quiz_index}', values=[[quiz_user_count[index]]])
-            self.quiz_table.update(range_name=f'I{5+user_quiz_index}', values=[[quiz_user_count[-1]]])
+            #self.quiz_table.update(range_name=f'I{5+user_quiz_index}', values=[[quiz_user_count[-1]]])
 
         print('sheets successfully updated')
     
@@ -286,7 +290,7 @@ class Bot:
         # add a function to run the quiz
         if True: #channel == 'actualeducation' or channel == 'en1gmaunknown':
             # collect chat answers
-            if message.startswith('$answer ') and username not in self.quiz_answers_u:
+            if (message.startswith('$answer ') or message.startswith('$a ')) and username not in self.quiz_answers_u:
                 self.quiz_answers_u.append(username)
                 self.quiz_answers_a.append(' '.join(message.split()[1:]).lower().strip())
             elif username in self.quiz_answers_u and message.startswith('$answer '):
@@ -314,7 +318,7 @@ class Bot:
 
         elif message.startswith('$saves ') or (message.startswith('!qed ') and channel_name.lower() == 'pencenter'):
             # make sure theyre a mod
-            if not (mod_status or channel_name.lower() == username.lower()):
+            if not (mod_status or channel_name.lower() == username.lower() or username == 'en1gmaunknown'):
                 send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
                 return
                 
@@ -524,6 +528,26 @@ class Bot:
             leaderboard = prefix + ', '.join([list(self.saves_counter.keys())[i] for i in reversed(top_users[-5:])])
             send_message(self.irc_socket, channel_name, leaderboard)
 
+        elif message.startswith('$quizleaderboard') or message.startswith('$quizlb'):
+
+            # check if they are asking for the total leaderboard
+            if len(message.split()) == 2:
+                # figure out who they are asking for
+                if message.split()[1].lower() in self.CHANNEL_COLUMNS:
+                    channel_index = self.CHANNEL_COLUMNS.index(channel_name)
+                    prefix = f'{channel_name} quiz leaderboard: '
+                    top_users = np.argsort([x[channel_index] for x in self.quiz_counter.values()])
+                else:
+                    top_users = np.argsort([x[-1] for x in self.quiz_counter.values()])
+                    prefix = 'Overall quiz leaderboard: '
+            else:
+                channel_index = self.CHANNEL_COLUMNS.index(channel_name)
+                prefix = f'{channel_name} quiz leaderboard: '
+                top_users = np.argsort([x[channel_index] for x in self.quiz_counter.values()])
+            # create a string with a list of currently live channels
+            leaderboard = prefix + ', '.join([list(self.quiz_counter.keys())[i] for i in reversed(top_users[-5:])])
+            send_message(self.irc_socket, channel_name, leaderboard)
+
         elif message.startswith('$queue ') or message.startswith('$q ') or message.startswith('question '):
             self.question_queue[channel_name].append([username, message.split()[1:]])
             send_message(self.irc_socket, channel_name, f"{username} you are in queue position {len(self.question_queue[channel_name])}")
@@ -567,7 +591,7 @@ class Bot:
                 return
             
             self.quiz_state.append(channel_name)
-            send_message(self.irc_socket, channel_name, 'quiz started. type $answer <answer> in chat to submit your answer!')
+            send_message(self.irc_socket, channel_name, 'quiz started. type $answer/$a <answer> in chat to submit your answer!')
         elif message == '$closequiz' or message == '$stopquiz':
             # make sure theyre a mod
             if not (mod_status or channel_name.lower() == username.lower() or username == 'en1gmaunknown'):
@@ -580,7 +604,6 @@ class Bot:
 
             self.quiz_state.remove(channel_name)
             send_message(self.irc_socket, channel_name, 'quiz submissions closed')
-        
         elif message.startswith('$scorequiz'):
             # make sure theyre a mod
             if not (mod_status or channel_name.lower() == username.lower() or username == 'en1gmaunknown'):
@@ -618,9 +641,25 @@ class Bot:
 
             self.quiz_answers_a = []
             self.quiz_answers_u = []
+        elif message == '$quizreset':
+            # make sure theyre a mod
+            if not (mod_status or channel_name.lower() == username.lower() or username == 'en1gmaunknown'):
+                send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
+                return
+            
+            letter = chr(ord('A') + self.CHANNEL_COLUMNS.index(channel_name) + 1)
+            
+            # get the range of values for the column to remove
+            valuerange = f'{letter}5:{letter}{len(self.quiz_counter) + 5}'
+            values = [[0] for _ in range(len(self.quiz_counter))]
+
+            # update the spreadsheet to remove the values
+            self.quiz_table.update(valuerange, values)
+
+            send_message(self.irc_socket, channel_name, 'quiz data reset')
 
         # pass through quiz answers      
-        elif message.startswith('$answer '):
+        elif message.startswith('$answer ') or message.startswith('$a '):
             if channel_name not in self.quiz_state:
                 send_message(self.irc_socket, channel_name, 'quiz is not active')
 
@@ -666,7 +705,6 @@ class Bot:
             self.update_sheet_values(username, self.CHANNEL_COLUMNS.index(channel_name), first=True)
 
         return self.saves_counter[username]
-
 
 # change to quizcounter
     def increment_quizcounter(self, username, channel_name, increment=1):
