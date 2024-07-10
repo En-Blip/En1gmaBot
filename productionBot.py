@@ -504,6 +504,11 @@ class Bot:
                 return
 
         elif message.startswith('$reset'):
+
+            if not (mod_status or channel_name.lower() == username.lower() or username == 'en1gmaunknown'):
+                send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
+                return
+
             self.refresh_oauth()
             self.get_sheet_values()
             send_message(self.irc_socket, channel_name, 'server reloaded')
@@ -655,6 +660,8 @@ class Bot:
 
             # update the spreadsheet to remove the values
             self.quiz_table.update(valuerange, values)
+
+            self.get_sheet_values()
 
             send_message(self.irc_socket, channel_name, 'quiz data reset')
 
