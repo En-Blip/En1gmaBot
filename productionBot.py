@@ -174,7 +174,7 @@ class Bot:
             for i in ["B","C","D","E","F","G","H"]:
                 self.quiz_table.update(range_name=f'{i}{5+user_quiz_index}', values=[[quiz_user_count[ord(i)-ord('A')-1]]])
 
-                self.saves_table.update(range_name=f'I{5+user_quiz_index}', values='=sum(INDIRECT("A" & ROW() & ":H" & ROW()))', value_input_option='USER_ENTERED')
+                self.quiz_table.update(range_name=f'I{5+user_quiz_index}', values='=sum(INDIRECT("A" & ROW() & ":H" & ROW()))', value_input_option='USER_ENTERED')
         else:
             self.quiz_table.update(range_name=f'{letter}{5+user_quiz_index}', values=[[quiz_user_count[index]]])
             #self.quiz_table.update(range_name=f'I{5+user_quiz_index}', values=[[quiz_user_count[-1]]])
@@ -615,6 +615,7 @@ class Bot:
                 send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
                 return
             
+            # if they havent closed the quiz yet
             if channel_name in self.quiz_state:
                 self.quiz_state.remove(channel_name)
             
@@ -627,6 +628,7 @@ class Bot:
 
             # variable to see if the first correct answer has been found
             first_correct = False
+
             for user, answer in zip(self.quiz_answers_u[channel_name], self.quiz_answers_a[channel_name]):
                 if answer == correct_answer:
                     if not first_correct:
@@ -641,6 +643,16 @@ class Bot:
                 else:
                     self.increment_quizcounter(user, channel_name, 1)
                     total_points += 1
+
+            # update the spreadsheet with the total points
+            letter = chr(ord('A') + self.CHANNEL_COLUMNS.index(channel_name) + 1)
+            
+            # get the range of values for the column to remove
+            valuerange = f'{letter}5:{letter}{len(self.quiz_counter) + 5}'
+            values = [[self.quiz_counter[user]] for user in self.quiz_counter.keys()]
+
+            # update the spreadsheet to remove the values
+            self.quiz_table.update(valuerange, values)
             
             send_message(self.irc_socket, channel_name, f'Congratulations everyone! {total_points} points were awarded!')
 
@@ -738,7 +750,8 @@ class Bot:
             self.quiz_counter[username][-1] += increment
 
             # update the spreadsheet for the savecounter
-            self.update_quiz_sheet(username, self.CHANNEL_COLUMNS.index(channel_name))
+            # dont update the quiz sheet because i am going to do it at the end of scoring
+            #self.update_quiz_sheet(username, self.CHANNEL_COLUMNS.index(channel_name))
 
         else:
             # create the user in the dict and our positions list
@@ -749,7 +762,7 @@ class Bot:
             self.quiz_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] = increment
             #self.quiz_counter[username][-1] = increment
 
-            # update the spreadsheet for the savecounter
+            # dont update the quiz sheet because i am going to do it at the end of scoring
             self.update_quiz_sheet(username, self.CHANNEL_COLUMNS.index(channel_name), first=True)
 
 
