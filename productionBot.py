@@ -104,8 +104,8 @@ class Bot:
 
         # grab stream-specific variables, like quiz answers and quiz state
         self.quiz_state = [] # stores the channels in "quiz state"
-        self.quiz_answers_u = [] # stores the answers for users in thechannels in "quiz state"
-        self.quiz_answers_a = []
+        self.quiz_answers_u = {channel:[] for channel in self.CHANNEL_COLUMNS} # stores the answers for users in thechannels in "quiz state"
+        self.quiz_answers_a = {channel:[] for channel in self.CHANNEL_COLUMNS}
 
     def authorize_bot(self, bot_username):
         # Set up the connection to the IRC server
@@ -290,10 +290,10 @@ class Bot:
         # add a function to run the quiz
         if True: #channel == 'actualeducation' or channel == 'en1gmaunknown':
             # collect chat answers
-            if (message.startswith('$answer ') or message.startswith('$a ')) and username not in self.quiz_answers_u:
-                self.quiz_answers_u.append(username)
-                self.quiz_answers_a.append(' '.join(message.split()[1:]).lower().strip())
-            elif username in self.quiz_answers_u and message.startswith('$answer '):
+            if (message.startswith('$answer ') or message.startswith('$a ')) and username not in self.quiz_answers_u[channel]:
+                self.quiz_answers_u[channel].append(username)
+                self.quiz_answers_a[channel].append(' '.join(message.split()[1:]).lower().strip())
+            elif username in self.quiz_answers_u[channel] and (message.startswith('$answer ') or message.startswith('$a ')):
                 send_message(self.irc_socket, channel, 'you have already answered this question')
     
 
@@ -627,7 +627,7 @@ class Bot:
 
             # variable to see if the first correct answer has been found
             first_correct = False
-            for user, answer in zip(self.quiz_answers_u, self.quiz_answers_a):
+            for user, answer in zip(self.quiz_answers_u[channel_name], self.quiz_answers_a[channel_name]):
                 if answer == correct_answer:
                     if not first_correct:
                         send_message(self.irc_socket, channel_name, f'{user} got the first correct answer!')
@@ -644,8 +644,8 @@ class Bot:
             
             send_message(self.irc_socket, channel_name, f'Congratulations everyone! {total_points} points were awarded!')
 
-            self.quiz_answers_a = []
-            self.quiz_answers_u = []
+            self.quiz_answers_a[channel_name] = []
+            self.quiz_answers_u[channel_name] = []
         elif message == '$quizreset':
             # make sure theyre a mod
             if not (mod_status or channel_name.lower() == username.lower() or username == 'en1gmaunknown'):
@@ -707,7 +707,7 @@ class Bot:
 
             # initialize the total and first save
             self.saves_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] = increment
-            self.saves_counter[username][-1] = increment
+            #self.saves_counter[username][-1] = increment
 
             self.update_sheet_values(username, self.CHANNEL_COLUMNS.index(channel_name), first=True)
 
@@ -747,7 +747,7 @@ class Bot:
 
             # initialize the total and first save
             self.quiz_counter[username][self.CHANNEL_COLUMNS.index(channel_name)] = increment
-            self.quiz_counter[username][-1] = increment
+            #self.quiz_counter[username][-1] = increment
 
             # update the spreadsheet for the savecounter
             self.update_quiz_sheet(username, self.CHANNEL_COLUMNS.index(channel_name), first=True)
