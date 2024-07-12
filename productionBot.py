@@ -176,7 +176,8 @@ class Bot:
 
                 self.quiz_table.update(range_name=f'I{5+user_quiz_index}', values='=sum(INDIRECT("A" & ROW() & ":H" & ROW()))', value_input_option='USER_ENTERED')
         else:
-            self.quiz_table.update(range_name=f'{letter}{5+user_quiz_index}', values=[[quiz_user_count[index]]])
+            print('something went wrong')
+            #self.quiz_table.update(range_name=f'{letter}{5+user_quiz_index}', values=[[quiz_user_count[index]]])
             #self.quiz_table.update(range_name=f'I{5+user_quiz_index}', values=[[quiz_user_count[-1]]])
 
         print('sheets successfully updated')
