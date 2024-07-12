@@ -648,9 +648,9 @@ class Bot:
             # update the spreadsheet with the total points
             letter = chr(ord('A') + self.CHANNEL_COLUMNS.index(channel_name) + 1)
             
-            # get the range of values for the column to remove
+            # get the range of values for the column
             valuerange = f'{letter}5:{letter}{len(self.quiz_counter) + 5}'
-            values = [[self.quiz_counter[user]] for user in self.quiz_counter.keys()]
+            values = [[self.quiz_counter[user].tolist()] for user in self.quiz_counter.keys()]
 
             # update the spreadsheet to remove the values
             self.quiz_table.update(valuerange, values)
