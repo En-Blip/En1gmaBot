@@ -754,6 +754,7 @@ class Bot:
             #self.update_quiz_sheet(username, self.CHANNEL_COLUMNS.index(channel_name))
 
         else:
+            print(username)
             # create the user in the dict and our positions list
             self.quiz_counter[username] = np.zeros(len(self.CHANNEL_COLUMNS) + 1, dtype=int)
             self.quiz_user_positions.append(username)
