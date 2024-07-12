@@ -650,7 +650,7 @@ class Bot:
             
             # get the range of values for the column
             valuerange = f'{letter}5:{letter}{len(self.quiz_counter) + 5}'
-            values = [[self.quiz_counter[user].tolist()[self.CHANNEL_COLUMNS.index(channel_name)+1]] for user in self.quiz_counter.keys()]
+            values = [[self.quiz_counter[user].tolist()[self.CHANNEL_COLUMNS.index(channel_name)]] for user in self.quiz_counter.keys()]
 
             # update the spreadsheet to remove the values
             self.quiz_table.update(valuerange, values)
