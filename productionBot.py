@@ -504,7 +504,7 @@ class Bot:
 
                 return
 
-        elif message.startswith('$reset'):
+        elif message == '$reset':
 
             if not (mod_status or channel_name.lower() == username.lower() or username == 'en1gmaunknown'):
                 send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
@@ -584,6 +584,16 @@ class Bot:
             # clear the question queue
             self.question_queue[channel_name] = []
             send_message(self.irc_socket, channel_name, 'question queue cleared')
+
+        elif message.startswith('$so '):
+            if not (mod_status or channel_name.lower() == username.lower() or username == 'en1gmaunknown'):
+                send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
+                return
+            
+            spotlight_user = ''.join(message.split()[1].split()[0:]) if message.split()[1][0] == '@' else message.split()[1]
+
+            send_message(self.irc_socket, channel_name, '/shoutout ' + spotlight_user)
+
 
         # commands specific to quizzes
         elif message == '$startquiz':
@@ -755,7 +765,6 @@ class Bot:
             #self.update_quiz_sheet(username, self.CHANNEL_COLUMNS.index(channel_name))
 
         else:
-            print(username)
             # create the user in the dict and our positions list
             self.quiz_counter[username] = np.zeros(len(self.CHANNEL_COLUMNS) + 1, dtype=int)
             self.quiz_user_positions.append(username)
