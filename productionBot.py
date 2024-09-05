@@ -20,6 +20,8 @@ TODO
     close api responses
 '''
 
+JOKES = ['A sphere and a torus walk into a bar. When it comes time to pay the tab, the torus is out of cash. The sphere says "Sorry man, I can\'t cover you', 'How many commutative groups are there? A-Belian!', 'What do you call a baby eigensheep? A lamb, duh.', 'What did i say to pi? Be rational. What did pi say to i? Get real.', 'Why did the neural network cross the road? Who cares, as long as it got to the other side!', 'Someone stole a mathematician\'s gold. He said, "I want my Goldbach"']
+
 SCHEDULE = {
     'monday': {
         'DannyHighway' : '5:30PM',
@@ -585,14 +587,8 @@ class Bot:
             self.question_queue[channel_name] = []
             send_message(self.irc_socket, channel_name, 'question queue cleared')
 
-        elif message.startswith('$so '):
-            if not (mod_status or channel_name.lower() == username.lower() or username == 'en1gmaunknown'):
-                send_message(self.irc_socket, channel_name, 'you must be a mod to use this command')
-                return
-            
-            spotlight_user = ''.join(message.split()[1].split()[0:]) if message.split()[1][0] == '@' else message.split()[1]
-
-            send_message(self.irc_socket, channel_name, '/shoutout ' + spotlight_user)
+        elif message == '$joke':
+            send_message(self.irc_socket, channel_name, JOKES[np.random.randint(len(JOKES))])
 
 
         # commands specific to quizzes
