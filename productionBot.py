@@ -20,7 +20,7 @@ TODO
     close api responses
 '''
 
-JOKES = ['A sphere and a torus walk into a bar. When it comes time to pay the tab, the torus is out of cash. The sphere says "Sorry man, I can\'t cover you', 'How many commutative groups are there? A-Belian!', 'What do you call a baby eigensheep? A lamb, duh.', 'What did i say to pi? Be rational. What did pi say to i? Get real.', 'Why did the neural network cross the road? Who cares, as long as it got to the other side!', 'Someone stole a mathematician\'s gold. He said, "I want my Goldbach"']
+JOKES = ['A sphere and a torus walk into a bar. When it comes time to pay the tab, the torus is out of cash. The sphere says "Sorry man, I can\'t cover you"', 'How many commutative groups are there? A-Belian!', 'What do you call a baby eigensheep? A lamb, duh.', 'What did i say to pi? Be rational. What did pi say to i? Get real.', 'Why did the neural network cross the road? Who cares, as long as it got to the other side!', 'Someone stole a mathematician\'s gold. He said, "I want my Goldbach"', 'There\'s one group up to homomorphism.', 'Why did the mathematician name his dog Cauchy? Because it left a residue at every pole!']
 
 SCHEDULE = {
     'monday': {
@@ -58,6 +58,15 @@ SCHEDULE = {
 }
 
 SPREADSHEET = "En1gmaBot Database"
+
+#  invalid literal for int() with base 10: '@badge-info=subscriber/32;badges=broadcaster/1,subscriber/3030,premium/1;color=#0000ff;display-name=pencenter;emotes=emotesv2_13bc103b650245838cc83c4dafeb8bce:6'
+
+def convert_to_int(i, j):
+    try:
+        return int(i)
+    except ValueError:
+        print(f'could not convert {i} to int on row {j}')
+        return 0
 
 class Streamer:
     def __init__(self, settings):
@@ -868,14 +877,17 @@ def open_sheet(filepath):
     quiz_counter = spreadsheet.worksheet('QuizCounter') #QuizCounter
 
     # convert the sheets to dictionaries
-    default_responses = dict(zip(command_outputs.col_values(1), command_outputs.col_values(2)))
-    command_desc_dict = dict(zip(command_descriptions.col_values(1), command_descriptions.col_values(2)))
-    saves_ints = np.array([[int(i) for i in saves_counter.col_values(j)[4:]] for j in range(2, 10)])
-    quiz_ints = np.array([[int(i) for i in quiz_counter.col_values(j)[4:]] for j in range(2, 10)])
-    saves_dict = dict(zip(saves_counter.col_values(1)[4:], saves_ints.transpose()))
-    quiz_dict = dict(zip(quiz_counter.col_values(1)[4:], quiz_ints.transpose()))
-    quiz_user_positions = quiz_counter.col_values(1)[4:]
-    user_positions = saves_counter.col_values(1)[4:]
+
+        default_responses = dict(zip(command_outputs.col_values(1), command_outputs.col_values(2)))
+        command_desc_dict = dict(zip(command_descriptions.col_values(1), command_descriptions.col_values(2)))
+        saves_ints = np.array([[convert_to_int(i, j) for i, k in enumerate(saves_counter.col_values(j)[4:])] for j in range(2, 10)])
+        quiz_ints = np.array([[convert_to_int(i, j) for i, k in enumerate(quiz_counter.col_values(j)[4:])] for j in range(2, 10)])
+        saves_dict = dict(zip(saves_counter.col_values(1)[4:], saves_ints.transpose()))
+        quiz_dict = dict(zip(quiz_counter.col_values(1)[4:], quiz_ints.transpose()))
+        quiz_user_positions = quiz_counter.col_values(1)[4:]
+        user_positions = saves_counter.col_values(1)[4:]
+
+    
 
 
 
