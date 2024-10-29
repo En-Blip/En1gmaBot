@@ -68,6 +68,10 @@ def convert_to_int(i, j):
         print(f'could not convert {i} to int on row {j}')
         return 0
 
+def append_to_file(filename, txt):
+    with open(filename, 'a') as file:
+        file.write(txt)
+
 class Streamer:
     def __init__(self, settings):
         raid_message = settings['raid_message']
@@ -117,9 +121,6 @@ class Bot:
         self.quiz_state = [] # stores the channels in "quiz state"
         self.quiz_answers_u = {channel:[] for channel in self.CHANNEL_COLUMNS} # stores the answers for users in thechannels in "quiz state"
         self.quiz_answers_a = {channel:[] for channel in self.CHANNEL_COLUMNS}
-
-        # open a text file to store chat history
-        self.chat_history = open('chatHistory.txt', 'w+')
 
     def __del__(self):
         # close the text file
@@ -349,7 +350,7 @@ class Bot:
 
             # store the message in the text file
             date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S ')
-            self.chat_history.append(date + ": " + message)
+            append_to_file("saveslog.txt", date + ": " + message)
 
            # increment the savecounter for that user
             try:
