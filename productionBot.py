@@ -118,6 +118,13 @@ class Bot:
         self.quiz_answers_u = {channel:[] for channel in self.CHANNEL_COLUMNS} # stores the answers for users in thechannels in "quiz state"
         self.quiz_answers_a = {channel:[] for channel in self.CHANNEL_COLUMNS}
 
+        # open a text file to store chat history
+        self.chat_history = open('chatHistory.txt', 'w+')
+
+    def __del__(self):
+        # close the text file
+        self.chat_history.close()
+
     def authorize_bot(self, bot_username):
         # Set up the connection to the IRC server
         irc_server = 'irc.chat.twitch.tv'
@@ -340,6 +347,10 @@ class Bot:
                 send_message(self.irc_socket, channel_name, 'incorrect command usage, type $saves <username>')
                 return
 
+            # store the message in the text file
+            date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S ')
+            self.chat_history.append(date + ": " message)
+
            # increment the savecounter for that user
             try:
                 if len(message.strip().split()) == 3:
@@ -531,8 +542,8 @@ class Bot:
             if len(message.split()) == 2:
                 # figure out who they are asking for
                 if message.split()[1].lower() in self.CHANNEL_COLUMNS:
-                    channel_index = self.CHANNEL_COLUMNS.index(channel_name)
-                    prefix = f'{channel_name} saves leaderboard: '
+                    channel_index = self.CHANNEL_COLUMNS.index(message.split()[1].lower())
+                    prefix = f'{message.split()[1].lower()} saves leaderboard: '
                     top_users = np.argsort([x[channel_index] for x in self.saves_counter.values()])
                 else:
                     top_users = np.argsort([x[-1] for x in self.saves_counter.values()])
