@@ -123,8 +123,7 @@ class Bot:
         self.quiz_answers_a = {channel:[] for channel in self.CHANNEL_COLUMNS}
 
     def __del__(self):
-        # close the text file
-        self.chat_history.close()
+        pass
 
     def authorize_bot(self, bot_username):
         # Set up the connection to the IRC server
@@ -891,8 +890,8 @@ def open_sheet(filepath):
     # convert the sheets to dictionaries
     default_responses = dict(zip(command_outputs.col_values(1), command_outputs.col_values(2)))
     command_desc_dict = dict(zip(command_descriptions.col_values(1), command_descriptions.col_values(2)))
-    saves_ints = np.array([[convert_to_int(i, k) for i, k in enumerate(saves_counter.col_values(j)[4:])] for j in range(2, 10)])
-    quiz_ints = np.array([[convert_to_int(i, k) for i, k in enumerate(quiz_counter.col_values(j)[4:])] for j in range(2, 10)])
+    saves_ints = np.array([[convert_to_int(i, k) for k, i in enumerate(saves_counter.col_values(j)[4:])] for j in range(2, 10)])
+    quiz_ints = np.array([[convert_to_int(i, k) for k, i in enumerate(quiz_counter.col_values(j)[4:])] for j in range(2, 10)])
     saves_dict = dict(zip(saves_counter.col_values(1)[4:], saves_ints.transpose()))
     quiz_dict = dict(zip(quiz_counter.col_values(1)[4:], quiz_ints.transpose()))
     quiz_user_positions = quiz_counter.col_values(1)[4:]
