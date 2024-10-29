@@ -349,7 +349,7 @@ class Bot:
 
             # store the message in the text file
             date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S ')
-            self.chat_history.append(date + ": " message)
+            self.chat_history.append(date + ": " + message)
 
            # increment the savecounter for that user
             try:
