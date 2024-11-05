@@ -65,7 +65,7 @@ def convert_to_int(i, j):
     try:
         return int(i)
     except ValueError:
-        print(f'could not convert {i} to int on row {j}')
+        print(f'could not convert {i} to int on row {j+5}') # offset of 5 is just because of how the spreadsheet is formatted
         return 0
 
 def append_to_file(filename, txt):
@@ -323,6 +323,10 @@ class Bot:
         channel_name = response['channel_name'].lower().strip()
         mod_status = response['mod_status']
 
+        # log the message
+        date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S ')
+        append_to_file(f'{channel_name}msg_log.txt',f'{date}: {channel_name} : {username} : {message}')
+
         if message.endswith('help'):
             # send the command description
             if ' '.join(message.split()[:-1]) in self.command_descriptions.keys():
@@ -348,7 +352,6 @@ class Bot:
                 return
 
             # store the message in the text file
-            date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S ')
             append_to_file("saveslog.txt", date + ": " + message + "\n")
 
            # increment the savecounter for that user
