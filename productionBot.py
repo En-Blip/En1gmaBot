@@ -349,7 +349,7 @@ class Bot:
 
             # store the message in the text file
             date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S ')
-            append_to_file("saveslog.txt", date + ": " + message)
+            append_to_file("saveslog.txt", date + ": " + message + "\n")
 
            # increment the savecounter for that user
             try:
@@ -890,16 +890,12 @@ def open_sheet(filepath):
     # convert the sheets to dictionaries
     default_responses = dict(zip(command_outputs.col_values(1), command_outputs.col_values(2)))
     command_desc_dict = dict(zip(command_descriptions.col_values(1), command_descriptions.col_values(2)))
-    saves_ints = np.array([[convert_to_int(i, k) for k, i in enumerate(saves_counter.col_values(j)[4:])] for j in range(2, 10)])
-    quiz_ints = np.array([[convert_to_int(i, k) for k, i in enumerate(quiz_counter.col_values(j)[4:])] for j in range(2, 10)])
+    saves_ints = np.array([[convert_to_int(val, count) for count, val in enumerate(saves_counter.col_values(j)[4:])] for j in range(2, 10)])
+    quiz_ints = np.array([[convert_to_int(val, count) for count, val in enumerate(quiz_counter.col_values(j)[4:])] for j in range(2, 10)])
     saves_dict = dict(zip(saves_counter.col_values(1)[4:], saves_ints.transpose()))
     quiz_dict = dict(zip(quiz_counter.col_values(1)[4:], quiz_ints.transpose()))
     quiz_user_positions = quiz_counter.col_values(1)[4:]
     user_positions = saves_counter.col_values(1)[4:]
-
-    
-
-
 
     return (command_desc_dict, default_responses, saves_dict, quiz_dict, user_positions, quiz_user_positions)
 
