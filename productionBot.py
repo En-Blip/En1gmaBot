@@ -325,7 +325,7 @@ class Bot:
 
         # log the message
         date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S ')
-        append_to_file(f'user_logs/{username}_log.txt',f'{date}: {channel_name} : {username} : {message}')
+        append_to_file(f'user_logs/{username}_log.txt',f'{date}: {channel_name} : {username} : {message}\n')
 
         if message.endswith('help'):
             # send the command description
