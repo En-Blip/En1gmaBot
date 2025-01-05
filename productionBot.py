@@ -8,6 +8,8 @@ import os
 import numpy as np
 import warnings
 import traceback
+import threading
+import time
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 '''
@@ -84,6 +86,7 @@ class Bot:
         self.channel_names = channel_names
         self.synced_channels = []
         self.mods = {}
+        self.pong_queue = 0
         
         # get the oauth token/gspread filename
         # get it from the protected json file
@@ -253,10 +256,11 @@ class Bot:
         response = self.irc_socket.recv(2048).decode('UTF-8')
         if response.startswith('PING'):
             self.irc_socket.send(bytes('PONG\r\n', 'UTF-8'))
+        elif 'PONG' in response:
+            self.pong_queue += 1
         else:
             if response.startswith(':'):
                 pass
-                #return
 
             cleaned_response = clean_response(response)
             if cleaned_response['mod_status']:
@@ -294,7 +298,7 @@ class Bot:
                 user_saves = self.increment_savecounter(cleaned_response['message'].split(' ')[2], cleaned_response['channel_name'], -1*int(cleaned_response['message'].split(' ')[5]))
 
             # reply to chat messages
-            if cleaned_response['message'].startswith('$') or cleaned_response['message'].startswith('!'):
+            if cleaned_response['message'].startswith('$') or (cleaned_response['message'].startswith('!') and cleaned_response['channel_name'] == 'pencenter'):
                 self.reply_to_message(cleaned_response)
 
             # add quiz status to look for quiz answers
@@ -313,9 +317,8 @@ class Bot:
                 self.quiz_answers_u[channel].append(username)
                 self.quiz_answers_a[channel].append(' '.join(message.split()[1:]).lower().strip())
             elif username in self.quiz_answers_u[channel] and (message.startswith('$answer ') or message.startswith('$a ')):
-                send_message(self.irc_socket, channel, 'you have already answered this question')
+                send_message(self.irc_socket, channel, f'{username}, you have already answered this question')
     
-
     def reply_to_message(self, response):
         # get the message and response
         message = response['message'].lower().strip()
@@ -755,7 +758,6 @@ class Bot:
 
         return self.saves_counter[username]
 
-# change to quizcounter
     def increment_quizcounter(self, username, channel_name, increment=1):
         '''increment the savecounter for that user
         Parameters: username (str), channel_name (str)
@@ -798,7 +800,6 @@ class Bot:
 
         return self.quiz_counter[username]
 
-
     def refresh_oauth(self):
         # get the parameters for our post request'
         url = "https://id.twitch.tv/oauth2/token"
@@ -831,6 +832,31 @@ class Bot:
 
         except:
             print('refresh failed')
+
+    def check_connection(self):
+        failcount = 0
+        print('running connection daemon')
+
+        while True:
+            time.sleep(5)
+            # ping the twitch api
+            self.irc_socket.send(bytes('PING :tmi.twitch.tv\r\n', 'UTF-8'))
+
+            # listen for a pong response
+            time.sleep(5)
+            if(self.pong_queue == 0):
+                failcount += 1
+                # if we dont get a pong, then wait to reconnect
+                print('server disconnected, waiting to reconnect. failcount:', failcount)
+
+                if(failcount > 30):
+                    print('too many failed attempts to reconnect')
+                    return
+            
+            else:
+                self.pong_queue = 0
+                failcount = 0
+
 
 def send_message(irc_socket, channel_name, message):
     irc_socket.send(bytes(f"PRIVMSG #{channel_name} :{message}\r\n", 'UTF-8'))
@@ -908,8 +934,13 @@ def open_sheet(filepath):
 bot_username = 'en1gmabot'
 channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation', 'meriwetherremark']
 
-my_bot = Bot(bot_username, channel_names)
-my_bot.join_chat()
-my_bot.run()
+if __name__ == '__main__':
+    my_bot = Bot(bot_username, channel_names)
+    my_bot.join_chat()
+    print("starting threads")
 
- 
+    thread1 = threading.Thread(target=my_bot.run)
+    thread1.daemon = True
+    thread1.start()
+
+    my_bot.check_connection()
