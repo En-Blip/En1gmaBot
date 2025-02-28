@@ -932,7 +932,7 @@ def open_sheet(filepath):
 
 
 bot_username = 'en1gmabot'
-channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'etothe2ipi', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation', 'meriwetherremark']
+channel_names = ['en1gmabot', 'en1gmaunknown', 'dondoesmath', 'dannyhighway', 'pencenter', 'enstucky', 'nsimplexpachinko', 'actualeducation', 'meriwetherremark']
 
 if __name__ == '__main__':
     my_bot = Bot(bot_username, channel_names)
